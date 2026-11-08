@@ -5572,18 +5572,10 @@ html.dark .hero-copy-card:hover {
 /* One centred pricing card. */
 .pricing-grid.two-up { grid-template-columns: minmax(0, 1fr); max-width: 460px; margin-inline: auto; }
 
-/* Feature media. */
-.pb-feature-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; z-index: 1; }
-
 /* Mode video and quick-start clip. */
 .pb-mode-shot { position: relative; display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); background: #07131f; color: transparent; font-size: 0; }
 
 
-/* The four restriction buttons, drawn over a real capture. */
-.pb-restrict-row { position:absolute; z-index:3; left:50%; bottom:16px; transform:translateX(-50%); display:flex; gap:.45rem; padding:.35rem; border-radius:999px; background:rgba(5,12,20,.82); border:1px solid rgba(120,220,255,.35); box-shadow:0 6px 22px rgba(0,0,0,.4); }
-.pb-rb { width:32px; height:32px; border-radius:9px; display:grid; place-items:center; color:#bfeaff; background:rgba(56,224,255,.12); border:1px solid rgba(120,220,255,.22); }
-.pb-rb svg { width:17px; height:17px; }
-.pb-ill { position:absolute; z-index:3; right:14px; bottom:14px; font-size:.62rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.55); }
 </style>
 
 <!-- ============================================================ -->
@@ -5915,27 +5907,9 @@ html.dark .hero-copy-card:hover {
       </div>
     </div>
 
-    <!-- 2. Model previews -->
+    <!-- 2. Every object type -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
       <div class="feature-row side-row reveal rev" style="padding:0;">
-        <div class="feature-text">
-          <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
-            <h3 class="feature-title">Model previews, not name rows</h3>
-            <p class="feature-copy">
-              Every tile is a real off-screen render of the object itself. Meshes, curves, surfaces, text and metaballs are hit against their evaluated geometry, so what you see includes the modifiers and shape keys. The previews are the list; the object name is only a small label along the top of each tile.
-            </p>
-          </div>
-        </div>
-        <div class="feature-media" role="img" aria-label="Real object previews in the Peekaboo grid">
-          <video muted loop playsinline data-autoplay poster="assets/images/object-types.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video60.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
-          <span class="media-tag">Real previews</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. Every object type -->
-    <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Supports Every object type</h3>
@@ -5945,26 +5919,8 @@ html.dark .hero-copy-card:hover {
           </div>
         </div>
         <div class="feature-media" role="img" aria-label="Peekaboo previews for many object types">
-          <img class="pb-feature-img" src="assets/images/object-types.jpg" alt="" />
+          <video muted loop playsinline data-autoplay poster="assets/images/object-types.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video60.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
           <span class="media-tag">Object types</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. Instances -->
-    <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal rev" style="padding:0;">
-        <div class="feature-text">
-          <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
-            <h3 class="feature-title">Instances resolve to their host</h3>
-            <p class="feature-copy">
-              Collection, dupli-object, particle and Geometry Nodes instances appear in the grid too. Blender evaluates them but they are not view-layer objects, so Peekaboo takes them from the depsgraph. Clicking a preview selects the instancer, exactly as a viewport click does. One instancer is one preview, however many objects it generates.
-            </p>
-          </div>
-        </div>
-        <div class="feature-media" role="img" aria-label="Instance and object previews">
-          <img class="pb-feature-img" src="assets/images/special-types.jpg" alt="" />
-          <span class="media-tag">Instances</span>
         </div>
       </div>
     </div>
@@ -5980,41 +5936,16 @@ html.dark .hero-copy-card:hover {
             </p>
           </div>
         </div>
-        <div class="feature-media pb-restrict-media" role="img" aria-label="Illustration of the four restriction buttons on the focused Peekaboo preview">
-          <img class="pb-feature-img" src="assets/images/rain-popup.jpg" alt="" />
-          <span class="pb-restrict-row" aria-hidden="true">
-            <span class="pb-rb" title="Selectable"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 1.5L9 20 5 3Z"/></svg></span>
-            <span class="pb-rb" title="Viewport Visibility"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg></span>
-            <span class="pb-rb" title="Disable in Viewports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
-            <span class="pb-rb" title="Render Visibility"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.2"/></svg></span>
-          </span>
+        <div class="feature-media" role="img" aria-label="Peekaboo restriction buttons on the focused preview">
+          <video muted loop playsinline data-autoplay poster="assets/images/restrictions.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video62.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center bottom;z-index:1"></video>
           <span class="media-tag">Restrictions</span>
-          <span class="pb-ill">UI illustration</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. Object modes -->
-    <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal rev" style="padding:0;">
-        <div class="feature-text">
-          <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
-            <h3 class="feature-title">Pick the object for a mode</h3>
-            <p class="feature-copy">
-              The N-panel offers a button for every mode the selected object can enter. Press Pose and the popup lists only the objects that can be posed; click one and it takes the previous object's place with Pose already entered. The mode follows the object from either popup: edit a mesh, pick another mesh with Alt+Space, and you are editing that one.
-            </p>
-          </div>
-        </div>
-        <div class="feature-media" role="img" aria-label="Peekaboo object mode buttons">
-          <img class="pb-feature-img" src="assets/images/modes-panel.jpg" alt="" />
-          <span class="media-tag">Object modes</span>
         </div>
       </div>
     </div>
 
     <!-- 7. Rename -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal" style="padding:0;">
+      <div class="feature-row side-row reveal rev" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Rename in place</h3>
@@ -6032,7 +5963,7 @@ html.dark .hero-copy-card:hover {
 
     <!-- 8. Tap or hold -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal rev pb-tap-row" style="padding:0;">
+      <div class="feature-row side-row reveal pb-tap-row" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Tap or hold</h3>
@@ -6050,7 +5981,7 @@ html.dark .hero-copy-card:hover {
 
     <!-- 10. Layout -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal" style="padding:0;">
+      <div class="feature-row side-row reveal rev" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Tune the grid to your scene</h3>
@@ -6068,7 +5999,7 @@ html.dark .hero-copy-card:hover {
 
     <!-- 11. Behavior -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal rev" style="padding:0;">
+      <div class="feature-row side-row reveal" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">The details that keep it out of the way</h3>
