@@ -5559,6 +5559,7 @@ html.dark .hero-copy-card:hover {
 /* The offer band is its own opaque panel, as in the original page, so the
    GhostFibers background can never show through it. */
 .offer-band { background-color: #061423 !important; }
+.offer-band .pb-off { display: inline-flex; align-items: center; justify-content: center; margin-left: .75rem; padding: .28rem .7rem; border-radius: 999px; background: #38e0ff; color: #061423; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: .78rem; letter-spacing: .05em; white-space: nowrap; }
 .ghost-fibers-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
@@ -5725,8 +5726,8 @@ html.dark .hero-copy-card:hover {
     <div class="ob-copy">
       <div class="so-title">Limited Time Discount</div>
       <div class="so-prices">
-        <span class="so-old" data-price="regular" data-fmt="usd">$99</span>
-        <span class="so-new" data-price="offer" data-fmt="usd">$69.3</span>
+        <span class="so-old" data-price="regular" data-fmt="usd">$14.99</span>
+        <span class="so-new" data-price="offer" data-fmt="usd">$4.50</span><span class="pb-off">70% OFF</span>
       </div>
     </div>
 
@@ -5743,7 +5744,7 @@ html.dark .hero-copy-card:hover {
         </a>
         <p class="coupon-hint">Click to copy the code.</p>
       </div>
-      <div class="so-valid" data-text="offer-expiry">Valid until October 31st 2026</div>
+      <div class="so-valid" data-text="offer-expiry">Valid for the First 10 Customers</div>
     </div>
 
     <div class="ob-media">
@@ -5774,7 +5775,7 @@ html.dark .hero-copy-card:hover {
         </div>
 
         <div class="hero-cta">
-          <a class="btn btn-primary" id="get-now-pricing" href="#pricing">
+          <a class="btn btn-primary" href="https://superhivemarket.com/products/peekaboo?ref=473" target="_blank" rel="noopener noreferrer">
             Get Peekaboo
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
@@ -5783,24 +5784,6 @@ html.dark .hero-copy-card:hover {
       </div>
     </div>
 
-    <div class="hero-media" aria-label="Peekaboo demo preview">
-      <video muted loop playsinline data-autoplay aria-label="Peekaboo preview grid demo" poster="assets/images/rain-popup.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video57.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
-      <div class="grid-lines"></div>
-      <span class="hm-badge hm-badge-left">Objects</span>
-      <span class="hm-badge hm-badge-center">Realtime</span>
-      <a class="hm-badge hm-badge-right" aria-label="Clip credit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="hm-badge-name">Rain</span></a>
-      <button class="g-arrow hm-nav hm-nav-prev" type="button" aria-label="Previous clip" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
-      </button>
-      <button class="g-arrow hm-nav hm-nav-next" type="button" aria-label="Next clip" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
-      <div class="hm-dots" id="hmDots" role="tablist" aria-label="Peekaboo clips"></div>
-      <button class="play-btn" type="button" aria-label="Play or pause the demo video">
-        <svg class="ico-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
-        <svg class="ico-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5h3.2v13H8zM12.8 5.5H16v13h-3.2z"/></svg>
-      </button>
-    </div>
   </div>
 </section>
 
@@ -10948,12 +10931,20 @@ html .support-card .support-link::before,html .support-card .support-link::after
 /* A little larger: the Tap or hold copy. */
 .feature-row.side-row.pb-tap-row .feature-title { font-size: clamp(1.15rem, 2.1vw, 1.5rem) !important; }
 .feature-row.side-row.pb-tap-row .feature-copy { font-size: clamp(.95rem, 1.35vw, 1.1rem) !important; }
-@media (max-width: 1000px) {
-  #gallery .gallery-track { flex-wrap: wrap !important; }
-  #gallery .g-card { flex: 0 0 calc((100% - 2 * var(--strip-gap) - 1px) / 3) !important; }
+/* The gallery stays a single six-card strip at every width. */
+
+/* First-10-customers validity: a little larger, with a soft pulse. */
+.offer-band .so-valid {
+  font-size: .98rem !important;
+  padding: .44rem 1.15rem !important;
+  animation: pbOfferFlash 2.8s ease-in-out infinite;
 }
-@media (max-width: 640px) {
-  #gallery .g-card { flex: 0 0 calc((100% - var(--strip-gap) - 1px) / 2) !important; }
+@keyframes pbOfferFlash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(56, 224, 255, 0); }
+  50% { box-shadow: 0 0 20px 2px rgba(56, 224, 255, .5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .offer-band .so-valid { animation: none; }
 }
 </style>
 <script id="pbLazyClips">
