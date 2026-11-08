@@ -4,12 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Peekaboo — Object Picker for Blender 5.2</title>
-<meta name="description" content="Peekaboo is a viewport object picker for Blender 5.2. Hold or tap Alt to open a grid of live model previews under the cursor, then click the object you meant." />
+<meta name="description" content="Peekaboo is a viewport object picker for Blender 5.2. Hold or tap Alt+Space to open a grid of live model previews under the cursor, then click the object you meant." />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Peekaboo — Object Picker for Blender 5.2" />
 <meta property="og:description" content="Preview and select any object under the cursor. One anchored grid, one live model preview per object, no Outliner hunt." />
 <meta property="og:image" content="assets/images/rain-popup.jpg" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%23071422'/%3E%3Cpath d='M6 24S13 13 24 13s18 11 18 11-7 11-18 11S6 24 6 24Z' fill='none' stroke='%2338e0ff' stroke-width='3'/%3E%3Ccircle cx='24' cy='24' r='6' fill='%2338e0ff'/%3E%3C/svg%3E" />
 
 <!-- Fonts (graceful fallback to system stack offline) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -5537,9 +5536,10 @@ html.dark .hero-copy-card:hover {
 <!-- ============================================================ -->
 
 <!-- ============================================================ -->
-<!-- INTERACTIVE BACKGROUND — procedural canvas, first in the body  -->
+<!-- GHOST FIBERS BACKGROUND — React Bits GhostFibers, ported to   -->
+<!-- vanilla WebGL2. First in the body so it paints behind all.    -->
 <!-- ============================================================ -->
-<canvas id="interactiveBg" aria-hidden="true"></canvas>
+<div id="ghostBg" class="ghost-fibers-container" aria-hidden="true"><canvas class="ghost-fibers-canvas"></canvas></div>
 <noscript><style>.g-card{opacity:1;transform:none}.reveal{opacity:1;filter:none;transform:none}</style></noscript>
 <script>
 (function () {
@@ -5553,57 +5553,35 @@ html.dark .hero-copy-card:hover {
 <!-- PAGE-ONLY STYLES                                             -->
 <!-- ============================================================ -->
 <style id="pbPageStyles">
-/* Brand mark — the page's eye glyph, drawn inline so there is no request. */
-.pb-brand-mark { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: #38e0ff !important; }
-.pb-brand-mark svg { width: 34px; height: 34px; display: block; }
+/* GhostFibers background */
+#ghostBg { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+#ghostBg .ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+/* Keep the offer band and its coupon legible over the fibers. */
+.offer-band .ob-inner { background: rgba(3, 10, 18, .42); border-radius: 18px; }
+.offer-band .coupon-btn { background: rgba(4, 12, 22, .92) !important; }
+.offer-band .coupon-hint { text-shadow: 0 1px 3px rgba(0,0,0,.85); }
+.offer-band .so-valid { background: rgba(4, 12, 22, .72) !important; }
+.ghost-fibers-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
 /* The real capture under the hero copy. */
 .pb-hero-shot { display: block; width: 100%; height: auto; border-radius: 12px; }
 .hero-video-card .pb-hero-shot { box-shadow: 0 12px 30px -18px rgba(0, 0, 0, .8); }
 
-/* Hero side rails: the source clips are landscape, so each rail is a 9:16
-   close-up crop rather than the reference's 1:5 strip. */
-.hero-side video { aspect-ratio: 9 / 16; }
+/* Solid theme wordmark, no gradient. */
+.brand-title-text .brand-title-grad { background-image: none !important; color: #38e0ff !important; -webkit-text-fill-color: #38e0ff !important; }
 
-/* Two-edition offer band. It reuses the offer-band shell but carries no
-   discount, no coupon and no expiry — only the two real editions. */
-.offer-band .pb-editions { display: flex; align-items: flex-end; gap: 1.4rem; margin-top: .15rem; }
-.offer-band .pb-edition { display: flex; flex-direction: column; line-height: 1; }
-.offer-band .pb-edition .pb-price { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: clamp(1.9rem, 3vw, 2.4rem); letter-spacing: -.02em; color: #38e0ff; }
-.offer-band .pb-edition .pb-label { margin-top: .34rem; font-size: .66rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); }
-.offer-band .pb-actions { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .55rem; height: 100%; }
-.offer-band .pb-actions .btn { white-space: nowrap; padding: .72rem 1.25rem; font-size: .9rem; }
-.offer-band .pb-actions .so-valid { white-space: nowrap; }
-.offer-band .pb-band-note { margin-top: .35rem; font-size: .72rem; color: var(--muted); text-align: center; }
+/* One centred pricing card. */
+.pricing-grid.two-up { grid-template-columns: minmax(0, 1fr); max-width: 460px; margin-inline: auto; }
 
-/* Two pricing cards, centred, rather than the reference's six-tier grid. */
-.pricing-grid.two-up { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 900px; margin-inline: auto; }
-@media (max-width: 640px) { .pricing-grid.two-up { grid-template-columns: 1fr; max-width: 420px; } }
-.pb-price-final { font-size: 3.6rem; }
-.pb-price-final sup { top: -.9em; }
-
-/* Feature media uses stills as well as clips. */
+/* Feature media. */
 .pb-feature-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; z-index: 1; }
 
-/* Mode / preference cards that lead with a real capture. */
-.pb-mode-shot { display: block; width: 100%; height: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); color: transparent; font-size: 0; }
-
-/* Quick-start clip. */
+/* Mode video and quick-start clip. */
+.pb-mode-shot { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); background: #07131f; color: transparent; font-size: 0; }
 .pb-howto-video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; margin-top: 1.25rem; background: #000; border: 0; }
 
-/* Footer. */
-.pb-footer-brand { display: inline-flex; align-items: center; gap: .6rem; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: -.02em; text-decoration: none; color: var(--ink); }
-.pb-footer-brand svg { width: 30px; height: 30px; color: #38e0ff; flex: none; }
-.site-footer .footer-grid { gap: 2rem; }
-.pb-foot-note { margin-top: .8rem; font-size: .78rem; color: var(--muted); }
-
-/* Inline rename illustration — a real capture with the field drawn on top. */
-.pb-rename-media .pb-feature-img { object-position: center 60%; }
-.pb-rename-field { position:absolute; z-index:3; left:50%; top:52%; transform:translate(-50%,-50%); padding:.38rem .7rem; border:1px solid #38e0ff; border-radius:7px; background:rgba(6,14,24,.95); color:#eaf6ff; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:.82rem; letter-spacing:.02em; box-shadow:0 0 0 3px rgba(56,224,255,.18),0 8px 24px rgba(0,0,0,.45); white-space:nowrap; }
-.pb-rename-caret { display:inline-block; width:2px; height:1em; margin-left:2px; vertical-align:-.15em; background:#38e0ff; animation:pbCaret 1s steps(1) infinite; }
-@keyframes pbCaret { 50% { opacity:0; } }
-
-/* The four restriction buttons, drawn over the same real capture. */
+/* The four restriction buttons, drawn over a real capture. */
 .pb-restrict-row { position:absolute; z-index:3; left:50%; bottom:16px; transform:translateX(-50%); display:flex; gap:.45rem; padding:.35rem; border-radius:999px; background:rgba(5,12,20,.82); border:1px solid rgba(120,220,255,.35); box-shadow:0 6px 22px rgba(0,0,0,.4); }
 .pb-rb { width:32px; height:32px; border-radius:9px; display:grid; place-items:center; color:#bfeaff; background:rgba(56,224,255,.12); border:1px solid rgba(120,220,255,.22); }
 .pb-rb svg { width:17px; height:17px; }
@@ -5618,13 +5596,6 @@ html.dark .hero-copy-card:hover {
   <div class="container header-inner">
     <div class="brand-group">
       <a class="brand" href="https://superhivemarket.com/products/peekaboo?ref=473" target="_blank" rel="noopener noreferrer" aria-label="Peekaboo on Superhive">
-        <span class="brand-mark pb-brand-mark">
-          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M3.5 24S11 11 24 11s20.5 13 20.5 13S37 37 24 37 3.5 24 3.5 24Z"/>
-            <circle cx="24" cy="24" r="7" fill="currentColor" stroke="none"/>
-            <circle cx="26.6" cy="21.4" r="2.1" fill="#0b1a2a" stroke="none"/>
-          </svg>
-        </span>
         <span class="brand-stroke-stage brand-stroke-header"><span class="brand-title-text" aria-hidden="true" data-ink="Peekaboo"><span>Peek</span><span class="brand-title-grad">aboo</span></span></span>
       </a>
     </div>
@@ -5658,123 +5629,44 @@ html.dark .hero-copy-card:hover {
 
 <main id="top">
 
-<!-- ============================================================ -->
-<!-- GALLERY — product showcase strip, right below the top bar     -->
-<!-- ============================================================ -->
-<section class="gallery-section" id="gallery" aria-label="More add ons by Mr3D">
-  <span class="seam-label">More from Mr3D</span>
-  <div class="container">
-    <div class="gallery-head">
-      <div class="gallery-controls" style="margin-left:auto;">
-        <button class="g-arrow" id="gPrev" aria-label="Previous products" disabled>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
-        </button>
-        <button class="g-arrow" id="gNext" aria-label="Next products">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <div class="m3-wrap">
-      <div class="gallery-viewport" id="gViewport">
-        <ul class="gallery-track" id="gTrack">
-          <li class="g-card">
-            <a class="g-thumb" href="https://superhivemarket.com/products/auto-face-mocap-pro?ref=473" target="_blank" rel="noopener noreferrer">
-              <span class="g-frame">
-                <span class="g-ph gp-5" role="img" aria-label="Auto Face MoCap Pro">
-                  <img src="https://mr3dpageclips.carrd.co/assets/images/image16.jpg?v=a689dffb" alt="Auto Face MoCap Pro" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                </span>
-                <span class="g-ph-tag hot">Flagship</span>
-              </span>
-              <span class="g-caption"><span class="g-name">Auto Face MoCap Pro</span><span class="g-cta">View &rarr;</span></span>
-            </a>
-          </li>
-          <li class="g-card">
-            <a class="g-thumb" href="https://superhivemarket.com/products/gobos-master?ref=473" target="_blank" rel="noopener">
-              <span class="g-frame">
-                <span class="g-ph gp-1" role="img" aria-label="Gobos Master">
-                  <img src="https://mr3d.carrd.co/assets/images/image06.jpg?v=c88b4758" alt="Gobos Master" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                </span>
-                <span class="g-ph-tag hot">Featured</span>
-              </span>
-              <span class="g-caption"><span class="g-name">Gobos Master</span><span class="g-cta">View &rarr;</span></span>
-            </a>
-          </li>
-          <li class="g-card">
-            <a class="g-thumb" href="https://superhivemarket.com/products/decalify?ref=473" target="_blank" rel="noopener">
-              <span class="g-frame">
-                <span class="g-ph gp-2" role="img" aria-label="True Dark Themes Pack">
-                  <img src="https://mr3d.carrd.co/assets/images/image07.jpg?v=c88b4758" alt="True Dark Themes Pack" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                </span>
-              </span>
-              <span class="g-caption"><span class="g-name">True Dark Themes Pack</span><span class="g-cta">View &rarr;</span></span>
-            </a>
-          </li>
-          <li class="g-card">
-            <a class="g-thumb" href="https://superhivemarket.com/products/true-dark-blender-themes-pack?ref=473" target="_blank" rel="noopener">
-              <span class="g-frame">
-                <span class="g-ph gp-3" role="img" aria-label="Decalify">
-                  <img src="https://mr3d.carrd.co/assets/images/image02.jpg?v=c88b4758" alt="Decalify" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                </span>
-              </span>
-              <span class="g-caption"><span class="g-name">Decalify</span><span class="g-cta">View &rarr;</span></span>
-            </a>
-          </li>
-          <li class="g-card">
-            <a class="g-thumb" href="https://superhivemarket.com/products/tabflow?ref=473" target="_blank" rel="noopener noreferrer">
-              <span class="g-frame">
-                <span class="g-ph gp-6" role="img" aria-label="TabFlow">
-                  <img src="https://mr3dpageclips.carrd.co/assets/images/image17.jpg?v=c5be56da" alt="TabFlow" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                </span>
-                <span class="g-ph-tag hot">Time-Saver</span>
-              </span>
-              <span class="g-caption"><span class="g-name">TabFlow</span><span class="g-cta">View &rarr;</span></span>
-            </a>
-          </li>
-          <li class="g-card">
-            <a class="g-thumb" href="https://superhivemarket.com/creators/mr3d?ref=473" target="_blank" rel="noopener">
-              <span class="g-frame">
-                <span class="g-ph gp-4" role="img" aria-label="Mr3D creator page">
-                  <img src="https://mr3d.carrd.co/assets/images/image08.gif?v=c88b4758" alt="Mr3D creator page" style="width:100%;height:100%;object-fit:cover;display:block;" />
-                </span>
-              </span>
-              <span class="g-caption"><span class="g-name">More from Mr3D</span><span class="g-cta">Visit &rarr;</span></span>
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div class="gallery-dots" id="gDots" role="tablist" aria-label="Gallery pages"></div>
-    </div>
-  </div>
-</section>
+<!-- Gallery removed for the Superhive product-page embed. -->
 
 <!-- ============================================================ -->
-<!-- SPECIAL OFFER BAND — the two Peekaboo editions. No discount,   -->
-<!-- no coupon: the band carries the real prices.                   -->
+<!-- SHARED AFMP LAUNCH OFFER — kept as on the original Auto Face  -->
+<!-- MoCap Pro page, with the coupon copy logic and the AFMP clip. -->
 <!-- ============================================================ -->
-<section class="offer-band reveal" aria-label="Peekaboo editions">
+<section class="offer-band reveal" aria-label="Special offer">
   <div class="ob-shine"></div>
   <div class="ob-inner">
-    <div class="so-kicker">Peekaboo 1.0 · Now available</div>
+    <div class="so-kicker">Special Offer</div>
 
     <div class="ob-copy">
-      <div class="so-title">Two editions</div>
-      <div class="pb-editions">
-        <span class="pb-edition"><span class="pb-price">$14.99</span><span class="pb-label">Peekaboo (Full)</span></span>
-        <span class="pb-edition"><span class="pb-price">$29</span><span class="pb-label">Peekaboo (Full) Studio</span></span>
+      <div class="so-title">Limited Time Discount</div>
+      <div class="so-prices">
+        <span class="so-old" data-price="regular" data-fmt="usd">$99</span>
+        <span class="so-new" data-price="offer" data-fmt="usd">$69.3</span>
       </div>
     </div>
 
     <div class="ob-mid">
-      <div class="pb-actions">
-        <a class="btn btn-primary" href="#pricing">Choose your edition</a>
-        <div class="so-valid">Blender 5.2 and above</div>
-        <div class="pb-band-note">Prices from the Superhive listing. Licence terms on the store page.</div>
+      <div class="coupon-wrap">
+        <a class="coupon-btn" id="couponBtnBand"
+           href="https://superhivemarket.com/products/auto-face-mocap-pro?ref=473"
+           data-href="https://superhivemarket.com/products/auto-face-mocap-pro?ref=473&amp;variant=23321"
+           target="_top" rel="noopener"
+           aria-label="Copy the discount coupon code and open the store">
+          <span class="coupon-label">Coupon</span>
+          <span class="coupon-code">afmp30</span>
+          <span class="coupon-copy">Copy</span>
+        </a>
+        <p class="coupon-hint">Click to copy the code.</p>
       </div>
+      <div class="so-valid" data-text="offer-expiry">Limited time offer</div>
     </div>
 
     <div class="ob-media">
-      <img src="assets/images/rain-band.jpg" alt="Peekaboo preview grid over the Rain character" width="906" height="782" />
+      <img src="https://mr3dpageclips.carrd.co/assets/images/image18.gif?v=110e3b49"
+           alt="Auto Face MoCap Pro demo clip" width="453" height="391" />
     </div>
   </div>
 </section>
@@ -5790,16 +5682,12 @@ html.dark .hero-copy-card:hover {
       <span class="brand-title-text" aria-hidden="true" data-ink="Peekaboo"><span>Peek</span><span class="brand-title-grad">aboo</span></span>
     </div>
 
-    <div class="hero-cards">
-      <div class="quickfog-outer hero-side reveal">
-        <video muted loop playsinline data-autoplay data-no-clip-bar src="assets/videos/rail-left.mp4" poster="assets/videos/rail-left-poster.jpg" aria-label="Peekaboo preview grid, close-up"></video>
-      </div>
-
+        <div class="hero-cards">
       <div class="hero-center">
         <div class="quickfog-outer hero-copy-card">
-          <h1>Every object under your<br />cursor. One click away.</h1>
+          <h1>Easy See/Select Objects<br />Hidden inside other objects</h1>
           <p class="hero-sub">
-            Peekaboo opens an anchored grid of live model previews for everything under your pointer. Aim, tap Alt, and click the object you meant. No Outliner hunt, no hidden-object guesswork.
+            Peekaboo Allows you to easly see and select the objects hidden under
           </p>
         </div>
 
@@ -5815,16 +5703,11 @@ html.dark .hero-copy-card:hover {
           </a>
           <a class="btn btn-ghost" href="https://superhivemarket.com/products/peekaboo/docs?ref=473" target="_blank" rel="noopener noreferrer">Documentation</a>
         </div>
-        <p class="hero-note">Blender 5.2 and above · Runs in the viewport · No scene conversion</p>
-      </div>
-
-      <div class="quickfog-outer hero-side reveal">
-        <video muted loop playsinline data-autoplay data-no-clip-bar src="assets/videos/rail-right.mp4" poster="assets/videos/rail-right-poster.jpg" aria-label="Peekaboo previews, close-up"></video>
       </div>
     </div>
 
     <div class="hero-media" aria-label="Peekaboo demo preview">
-      <video muted loop playsinline data-autoplay poster="assets/videos/hero-grid-poster.jpg" aria-label="Peekaboo preview grid demo" src="assets/videos/hero-grid.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
+      <video muted loop playsinline data-autoplay aria-label="Peekaboo preview grid demo" poster="assets/images/rain-popup.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video57.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
       <div class="grid-lines"></div>
       <span class="hm-badge hm-badge-left">Objects</span>
       <span class="hm-badge hm-badge-center">Realtime</span>
@@ -5859,12 +5742,11 @@ html.dark .hero-copy-card:hover {
     <!-- What is Peekaboo -->
     <div class="quickfog-outer reveal" style="margin-top:1rem;padding:1rem .9rem;border-radius:14px;">
       <h3 style="font-size:1.5rem;margin-bottom:.5rem;">What is Peekaboo?</h3>
-      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;">Peekaboo is a viewport object picker for Blender 5.2 and above. Hold or tap Alt over the 3D Viewport and a grid of live model previews opens under the cursor, one tile per object it finds. Click a tile to select that object. The grid is anchored where you pressed it and never follows the mouse, so those objects are what it shows and your only job afterwards is to pick one.</p>
+      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;">Peekaboo is a viewport object picker for Blender 5.2 and above. Hold or tap Alt+Space over the 3D Viewport and a grid of live model previews opens under the cursor, one tile per object it finds. Click a tile to select that object.</p>
       <h3 style="font-size:1.5rem;margin:.9rem 0 .5rem;">Why use Peekaboo?</h3>
-      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;"><strong>Stop hunting the Outliner.</strong> The object you want is usually behind three others. Peekaboo shows you the model, not a row of names, so you can pick the right one without cycling through overlaps or hiding the scene.</p>
+      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;"><strong>Stop hunting the Outliner.</strong> The object you want is usually behind three others. Peekaboo shows you the model, not a row of names, so you can pick the right one without cycling through overlaps or hiding the front object first or clicking on the same place multiple times to select objects that are behind the main object.</p>
       <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;"><strong>Keep your hands in the viewport.</strong> Selection, multi-select, framing, the object context menu and inline rename all happen in the grid. The restriction buttons that control whether an object can be selected, seen, or rendered are on the preview you are pointing at.</p>
       <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;"><strong>Make it fit your scene.</strong> Preview size, columns, rows, object limit, cursor radius, preview angle, spin, dimming and name labels are all adjustable. Every mode can have its own popup key, or one key can cover them all.</p>
-      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0;"><strong>Nothing leaves Blender.</strong> The previews are rendered on your machine. Peekaboo does not convert the scene, upload your geometry, or change anything except the selection, restriction or name you choose.</p>
     </div>
 
     <style>
@@ -5899,7 +5781,7 @@ html.dark .hero-copy-card:hover {
           <h3>Aim, tap, pick.</h3>
           <ul class="compare-steps">
             <li><span class="step-num">1</span><span>Point at the objects you want</span></li>
-            <li><span class="step-num">2</span><span>Tap Alt, or your chosen key</span></li>
+            <li><span class="step-num">2</span><span>Tap Alt+Space, or your chosen key</span></li>
             <li><span class="step-num">3</span><span>See one live preview per object</span></li>
             <li><span class="step-num">4</span><span>Click the one you meant</span></li>
             <li><span class="step-num">5</span><span>Shift-click to build a selection, or right-click for the object menu</span></li>
@@ -5962,12 +5844,12 @@ html.dark .hero-copy-card:hover {
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">One preview per object</h3>
             <p class="feature-copy">
-              Hold or tap Alt over the viewport and the grid opens under the cursor with one tile per object it finds. The front-most object is the top-left tile; anything hidden behind something nearer is dimmed. Hover a tile to ring it in the selection colour, then click to select the object and close the grid.
+              Hold or tap Alt+Space over the viewport and the grid opens under the cursor with one tile per object it finds. The front-most object is the top-left tile; anything hidden behind something nearer is dimmed. Hover a tile to ring it in the selection colour, then click to select the object and close the grid.
             </p>
           </div>
         </div>
         <div class="feature-media" role="img" aria-label="Peekaboo preview grid">
-          <video muted loop playsinline data-autoplay poster="assets/videos/hero-grid-poster.jpg" src="assets/videos/hero-grid.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
+          <video muted loop playsinline data-autoplay poster="assets/images/rain-popup.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video58.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
           <span class="media-tag">Preview grid</span>
         </div>
       </div>
@@ -5985,7 +5867,7 @@ html.dark .hero-copy-card:hover {
           </div>
         </div>
         <div class="feature-media" role="img" aria-label="Real object previews in the Peekaboo grid">
-          <img class="pb-feature-img" src="assets/images/rain-popup.jpg" alt="" />
+          <video muted loop playsinline data-autoplay poster="assets/images/object-types.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video60.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
           <span class="media-tag">Real previews</span>
         </div>
       </div>
@@ -5996,7 +5878,7 @@ html.dark .hero-copy-card:hover {
       <div class="feature-row side-row reveal" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
-            <h3 class="feature-title">Every object type in one grid</h3>
+            <h3 class="feature-title">Supports Every object type</h3>
             <p class="feature-copy">
               Empties, lights, cameras, armatures, lattices, point clouds, grease pencil, volumes and force fields are listed too. Types with no surface preview as a wireframe box matched by their projected bounds; geometry with no faces is drawn from its own edges. The grid does not care what kind of object you meant.
             </p>
@@ -6059,7 +5941,7 @@ html.dark .hero-copy-card:hover {
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Pick the object for a mode</h3>
             <p class="feature-copy">
-              The N-panel offers a button for every mode the selected object can enter. Press Pose and the popup lists only the objects that can be posed; click one and it takes the previous object's place with Pose already entered. The mode follows the object from either popup: edit a mesh, Alt-pick another mesh, and you are editing that one.
+              The N-panel offers a button for every mode the selected object can enter. Press Pose and the popup lists only the objects that can be posed; click one and it takes the previous object's place with Pose already entered. The mode follows the object from either popup: edit a mesh, pick another mesh with Alt+Space, and you are editing that one.
             </p>
           </div>
         </div>
@@ -6081,23 +5963,21 @@ html.dark .hero-copy-card:hover {
             </p>
           </div>
         </div>
-        <div class="feature-media pb-rename-media" role="img" aria-label="Illustration of inline rename on a Peekaboo preview">
-          <img class="pb-feature-img" src="assets/images/rain-popup.jpg" alt="" />
-          <span class="pb-rename-field">GEO-rain-head<span class="pb-rename-caret"></span></span>
+        <div class="feature-media" role="img" aria-label="Peekaboo inline rename">
+          <video muted loop playsinline data-autoplay poster="assets/images/rain-popup.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video61.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
           <span class="media-tag">Inline rename</span>
-          <span class="pb-ill">UI illustration</span>
         </div>
       </div>
     </div>
 
     <!-- 8. Tap or hold -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal rev" style="padding:0;">
+      <div class="feature-row side-row reveal rev pb-tap-row" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Tap or hold</h3>
             <p class="feature-copy">
-              Tap opens the panel and keeps it open with the key up, so you can take your hand off the keyboard and pick at leisure. Hold keeps it up only while Alt is down. In Tap mode the previews turn only while the pointer is over the panel, so an idle panel stops re-rendering. A second tap, Esc, or a click off the previews closes it.
+              Tap opens the panel and keeps it open with the key up, so you can take your hand off the keyboard and pick at leisure. Hold keeps it up only while Alt+Space is down. In Tap mode the previews turn only while the pointer is over the panel, so an idle panel stops re-rendering. A second tap, Esc, or a click off the previews closes it.
             </p>
           </div>
         </div>
@@ -6108,27 +5988,9 @@ html.dark .hero-copy-card:hover {
       </div>
     </div>
 
-    <!-- 9. Keys -->
-    <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal" style="padding:0;">
-        <div class="feature-text">
-          <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
-            <h3 class="feature-title">One key, or one per mode</h3>
-            <p class="feature-copy">
-              The top of the preferences gives every object mode its own popup key. Choose One Key For All Modes and a single key replaces Alt everywhere. The keys come from lists of shortcuts that are free in that mode, so a choice cannot clash. Press F8 after binding new keys elsewhere and the lists, and the keymaps, are rebuilt.
-            </p>
-          </div>
-        </div>
-        <div class="feature-media" role="img" aria-label="Peekaboo popup key preferences">
-          <img class="pb-feature-img" src="assets/images/prefs-keys.jpg" alt="" />
-          <span class="media-tag">Keymaps</span>
-        </div>
-      </div>
-    </div>
-
     <!-- 10. Layout -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal rev" style="padding:0;">
+      <div class="feature-row side-row reveal" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">Tune the grid to your scene</h3>
@@ -6138,7 +6000,7 @@ html.dark .hero-copy-card:hover {
           </div>
         </div>
         <div class="feature-media" role="img" aria-label="Peekaboo layout preferences">
-          <img class="pb-feature-img" src="assets/images/prefs-layout.jpg" alt="" />
+          <video muted loop playsinline data-autoplay poster="assets/images/prefs-layout.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video63.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
           <span class="media-tag">Preferences</span>
         </div>
       </div>
@@ -6146,7 +6008,7 @@ html.dark .hero-copy-card:hover {
 
     <!-- 11. Behavior -->
     <div class="quickfog-outer" style="margin-bottom:1rem;padding:.6rem;">
-      <div class="feature-row side-row reveal" style="padding:0;">
+      <div class="feature-row side-row reveal rev" style="padding:0;">
         <div class="feature-text">
           <div class="quickfog-outer" style="padding:.7rem;height:100%;text-align:center;">
             <h3 class="feature-title">The details that keep it out of the way</h3>
@@ -6156,7 +6018,7 @@ html.dark .hero-copy-card:hover {
           </div>
         </div>
         <div class="feature-media" role="img" aria-label="Peekaboo display preferences">
-          <img class="pb-feature-img" src="assets/images/prefs-behavior.jpg" alt="" />
+          <video muted loop playsinline data-autoplay poster="assets/images/prefs-behavior.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video64.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
           <span class="media-tag">Behavior</span>
         </div>
       </div>
@@ -6187,7 +6049,7 @@ html.dark .hero-copy-card:hover {
     </div>
 
     <div class="quickfog-outer reveal" style="padding:.6rem;margin-top:1rem;">
-      <img class="pb-mode-shot" src="assets/images/modes-panel.jpg" alt="Peekaboo N-panel with Object, Edit, Sculpt, Vertex Paint and Weight Paint mode buttons" width="1600" height="853" />
+      <video class="pb-mode-shot" muted loop playsinline data-autoplay poster="assets/images/modes-panel.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video65.mp4" aria-label="Peekaboo mode buttons in action"></video>
       <div style="padding:1.1rem 1.3rem 1.3rem;">
         <h3 class="feature-title" style="text-align:center;margin-bottom:.7rem;">What the mode buttons do</h3>
         <p class="feature-copy" style="text-align:center;max-width:78ch;margin-inline:auto;">
@@ -6197,26 +6059,12 @@ html.dark .hero-copy-card:hover {
           <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Object / Edit / Pose on an armature, and the full paint and sculpt set on a mesh.</li>
           <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Only objects that can enter that mode are listed; hidden and unselectable objects, and instances, are left out.</li>
           <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>The previous object is returned to Object Mode first, then the newcomer is selected and the carried mode is entered.</li>
-          <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>From Object Mode there is no mode to carry, so the button supplies its own; a plain Alt pick stays a plain selection.</li>
+          <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>From Object Mode there is no mode to carry, so the button supplies its own; a plain Alt+Space pick stays a plain selection.</li>
           <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Nothing to list? A message in the status bar, rather than a button that appears to do nothing.</li>
         </ul>
       </div>
     </div>
 
-    <div class="quickfog-outer reveal" style="padding:.6rem;margin-top:1rem;">
-      <img class="pb-mode-shot" src="assets/images/prefs-keys.jpg" alt="Peekaboo preferences showing the Popup Opens In panel with per-mode keys" width="1540" height="866" />
-      <div style="padding:1.1rem 1.3rem 1.3rem;">
-        <h3 class="feature-title" style="text-align:center;margin-bottom:.7rem;">Keys that do not fight your keymap</h3>
-        <p class="feature-copy" style="text-align:center;max-width:78ch;margin-inline:auto;">
-          Each mode can have its own popup key, or one key can cover them all. The dropdowns are built from shortcuts that are free in the mode they belong to, so choosing one cannot clobber an existing binding. A key bound with a modifier does not collide with a bare press of the same key.
-        </p>
-        <ul class="check-list" style="max-width:78ch;margin-inline:auto;">
-          <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>One Key For All Modes replaces Alt with a single key everywhere; Alt stays the way in when the switch is off.</li>
-          <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Turn a mode off and the popup does not open there; the key passes straight through to whatever else uses it.</li>
-          <li><span class="check-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Free-key lists are a snapshot. Press F8 after binding new keys elsewhere and they are rebuilt with the keymaps.</li>
-        </ul>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -6327,7 +6175,6 @@ html.dark .hero-copy-card:hover {
             <ul>
               <li>Blender 5.2 or newer, with the add-on installed and enabled.</li>
               <li>The GPU and display that Blender 5.2 already runs on; Peekaboo renders its previews in the viewport.</li>
-              <li>No extra software, camera, headset or cloud account.</li>
             </ul>
           </div>
         </div>
@@ -6350,7 +6197,7 @@ html.dark .hero-copy-card:hover {
           <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
         </button>
         <div class="acc-body">
-          <div class="acc-inner">Press Alt over the 3D Viewport, or the key you chose in preferences. Tap opens the panel and leaves it open after the key is released; Hold keeps it open only while the key is down. Esc, a second tap, or a click off the previews closes it.</div>
+          <div class="acc-inner">Press Alt+Space over the 3D Viewport, or the key you chose in preferences. Tap opens the panel and leaves it open after the key is released; Hold keeps it open only while the key is down. Esc, a second tap, or a click off the previews closes it.</div>
         </div>
       </div>
 
@@ -6436,14 +6283,12 @@ html.dark .hero-copy-card:hover {
   <div class="container">
     <div class="section-head reveal" style="text-align:center;">
       <span class="section-kicker" style="justify-content:center;">Pricing</span>
-      <h2 class="section-title">Two editions. One picker.</h2>
-      <p class="section-sub" style="margin-inline:auto;">Peekaboo (Full) and Peekaboo (Full) Studio. Both include every feature in the add-on.</p>
+      <h2 class="section-title">One edition. Every feature.</h2>
+      <p class="section-sub" style="margin-inline:auto;">Peekaboo (Full) includes every feature in the add-on.</p>
     </div>
 
-    <div class="pricing-grid two-up">
-      <!-- Peekaboo (Full) -->
+        <div class="pricing-grid two-up">
       <div class="price-card featured reveal">
-        <span class="pop-badge">Most popular</span>
         <span class="plan">Peekaboo</span>
         <h3>Full</h3>
         <div class="price"><sup>$</sup>14.99</div>
@@ -6456,22 +6301,8 @@ html.dark .hero-copy-card:hover {
         </ul>
         <a class="btn btn-primary" href="https://superhivemarket.com/products/peekaboo?ref=473" target="_blank" rel="noopener noreferrer">Get Peekaboo</a>
       </div>
-
-      <!-- Peekaboo (Full) Studio -->
-      <div class="price-card reveal">
-        <span class="plan">Peekaboo</span>
-        <h3>Full Studio</h3>
-        <div class="price"><sup>$</sup>29</div>
-        <ul class="plan-list">
-          <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Everything in Peekaboo (Full)</li>
-          <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Peekaboo (Full) Studio edition</li>
-          <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Every object type and preview mode</li>
-          <li><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Blender 5.2 and above</li>
-        </ul>
-        <a class="btn btn-ghost" href="https://superhivemarket.com/products/peekaboo?ref=473" target="_blank" rel="noopener noreferrer">Get Studio</a>
-      </div>
     </div>
-    <p class="license-note">Prices shown in USD. Licence terms and seat counts are listed on the Superhive product page. Need more seats? Contact Mr3D through the creator page.</p>
+    <p class="license-note">Prices shown in USD. Licence terms are listed on the Superhive product page.</p>
   </div>
 </section>
 
@@ -6519,7 +6350,7 @@ html.dark .hero-copy-card:hover {
           <span class="support-tag">Step 2</span>
         </div>
         <h3>Aim &amp; open</h3>
-        <p>Put the cursor over the objects you want. Hold or tap Alt, or the key you chose in preferences. The grid opens where you pressed and waits for you to pick.</p>
+        <p>Put the cursor over the objects you want. Hold or tap Alt+Space, or the key you chose in preferences. The grid opens where you pressed and waits for you to pick.</p>
       </div>
 
       <div class="support-card">
@@ -6606,48 +6437,6 @@ html.dark .hero-copy-card:hover {
 <!-- ============================================================ -->
 <!-- FOOTER                                                       -->
 <!-- ============================================================ -->
-<footer class="site-footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a class="pb-footer-brand" href="#top">
-          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M3.5 24S11 11 24 11s20.5 13 20.5 13S37 37 24 37 3.5 24 3.5 24Z"/>
-            <circle cx="24" cy="24" r="7" fill="currentColor" stroke="none"/>
-            <circle cx="26.6" cy="21.4" r="2.1" fill="#0b1a2a" stroke="none"/>
-          </svg>
-          Peekaboo
-        </a>
-        <p>A viewport object picker for Blender 5.2 and above. Preview what is under the cursor, then pick it.</p>
-        <p class="pb-foot-note">Blender is a trademark of the Blender Foundation.</p>
-      </div>
-      <div class="footer-col">
-        <h4>Product</h4>
-        <a href="#workflow">Workflow</a>
-        <a href="#features">Features</a>
-        <a href="#shapekeys">Object modes</a>
-        <a href="#pricing">Pricing</a>
-      </div>
-      <div class="footer-col">
-        <h4>Support</h4>
-        <a href="https://superhivemarket.com/products/peekaboo/docs?ref=473" target="_blank" rel="noopener noreferrer">Documentation</a>
-        <a href="#specs">Specs &amp; FAQ</a>
-        <a href="mailto:linkedmr3d@gmail.com">Support email</a>
-        <a href="https://discord.gg/4PhVBGSqef" target="_blank" rel="noopener noreferrer">Discord</a>
-      </div>
-      <div class="footer-col">
-        <h4>Mr3D</h4>
-        <a href="https://superhivemarket.com/creators/mr3d?ref=473" target="_blank" rel="noopener noreferrer">Creator page</a>
-        <a href="https://superhivemarket.com/products/peekaboo?ref=473" target="_blank" rel="noopener noreferrer">Peekaboo on Superhive</a>
-        <a href="#changelog">Changelog</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>Peekaboo 1.0.0 &middot; Blender 5.2.0+</span>
-      <span>Made by Mr3D</span>
-    </div>
-  </div>
-</footer>
 
 <script>
 /* ============================================================
@@ -6689,7 +6478,7 @@ html.dark .hero-copy-card:hover {
     var y = window.scrollY || 0;
     var eager = Math.max(EAGER_PX, y + 1200);
     var els;
-    try { els = document.querySelectorAll('img[src], video[src]'); } catch (e) { return; }
+    try { els = document.querySelectorAll('video[src]'); } catch (e) { return; }
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       if (el.hasAttribute('data-eager')) continue;
@@ -6910,142 +6699,9 @@ html.dark .hero-copy-card:hover {
     seamEls.forEach(function (el) { el.classList.add('seam-open'); });
   }
 
-  /* ---------- 7. Product gallery carousel ---------- */
-  var viewport = document.getElementById('gViewport');
-  var track = document.getElementById('gTrack');
-  var prevBtn = document.getElementById('gPrev');
-  var nextBtn = document.getElementById('gNext');
-  var dotsWrap = document.getElementById('gDots');
-  var cards = track ? track.children : [];
+  /* The Mr3D gallery was removed for the Superhive embed; the catalog still uses
+     the same reduced-motion flag, so it is defined here. */
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Entrance stagger for cards
-  if (cards.length) {
-    Array.prototype.forEach.call(cards, function (c, i) {
-      c.style.transitionDelay = (i * 0.06) + 's';
-      setTimeout(function () { c.classList.add('g-in'); }, 60);
-    });
-  }
-
-  // Helper values
-  var remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-
-  function gVisible() {
-    var w = viewport ? viewport.clientWidth : 0;
-    if (w <= 420) return 1;
-    if (w <= 640) return 2;
-    if (w <= 1000) return 3;
-    return 5;
-  }
-  function gMaxIndex() { return Math.max(0, cards.length - gVisible()); }
-  function gPositions() {
-    var arr = [];
-    Array.prototype.forEach.call(cards, function (c) { arr.push(c.offsetLeft); });
-    return arr;
-  }
-  function gCurrent() {
-    var scroll = viewport.scrollLeft;
-    var arr = gPositions();
-    var best = 0;
-    for (var i = 0; i < arr.length; i++) {
-      if (Math.abs(arr[i] - scroll) < Math.abs(arr[best] - scroll)) best = i;
-    }
-    return best;
-  }
-  function gGo(i) {
-    i = Math.max(0, Math.min(gMaxIndex(), i));
-    var arr = gPositions();
-    viewport.scrollTo({ left: arr[i] || 0, behavior: reduceMotion ? 'auto' : 'smooth' });
-  }
-
-  // Prev / next buttons
-  prevBtn.addEventListener('click', function () { gGo(gCurrent() - 1); });
-  nextBtn.addEventListener('click', function () { gGo(gCurrent() + 1); });
-
-  // Dots
-  function gRenderDots() {
-    dotsWrap.innerHTML = '';
-    var n = gMaxIndex() + 1;
-    for (var i = 0; i < n; i++) {
-      (function (idx) {
-        var b = document.createElement('button');
-        b.className = 'g-dot' + (idx === 0 ? ' active' : '');
-        b.setAttribute('role', 'tab');
-        b.setAttribute('aria-label', 'Go to gallery page ' + (idx + 1));
-        b.addEventListener('click', function () { gGo(idx); gRestart(); });
-        dotsWrap.appendChild(b);
-      })(i);
-    }
-  }
-  function gUpdateDots() {
-    var cur = gCurrent();
-    var dots = dotsWrap.children;
-    for (var i = 0; i < dots.length; i++) {
-      dots[i].classList.toggle('active', i === cur);
-    }
-    prevBtn.disabled = cur <= 0;
-    nextBtn.disabled = cur >= gMaxIndex();
-
-    // Only show arrows (and dots) when the cards overflow — i.e. more cards
-    // than can fit in one row, or a narrower screen.
-    var overflow = viewport.scrollWidth > viewport.clientWidth + 1;
-    prevBtn.style.display = overflow ? '' : 'none';
-    nextBtn.style.display = overflow ? '' : 'none';
-    dotsWrap.style.display = overflow ? '' : 'none';
-  }
-  viewport.addEventListener('scroll', function () { gUpdateDots(); }, { passive: true });
-
-  // Drag to scroll (mouse devices only, so it never fights native touch swipe)
-  var gDown = false, gStartX = 0, gStartScroll = 0;
-  if (window.matchMedia('(pointer: fine)').matches) {
-    viewport.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0) return;
-      gDown = true; gStartX = e.clientX; gStartScroll = viewport.scrollLeft;
-      viewport.classList.add('dragging'); gStop();
-    });
-    window.addEventListener('pointermove', function (e) {
-      if (!gDown) return;
-      viewport.scrollLeft = gStartScroll - (e.clientX - gStartX);
-    });
-    window.addEventListener('pointerup', function () {
-      gDown = false; viewport.classList.remove('dragging'); gRestart();
-    });
-  }
-  // Touch: pause while touching
-  viewport.addEventListener('touchstart', gStop, { passive: true });
-  viewport.addEventListener('touchend', gRestart, { passive: true });
-  // Pause on hover
-  viewport.addEventListener('mouseenter', gStop);
-  viewport.addEventListener('mouseleave', gRestart);
-
-  // Auto-advance
-  var gTimer = null;
-  function gStop() { clearInterval(gTimer); gTimer = null; }
-  function gRestart() {
-    gStop();
-    if (reduceMotion) return;
-    gTimer = setInterval(function () {
-      /* ⛔ OFF-SCREEN CAROUSELS DO NOT ADVANCE. document.hidden was the only guard,
-         and it says nothing about the gallery having been scrolled past — the strip
-         kept scrolling itself (and re-measuring and repainting) for as long as the
-         page was open. isOnScreen() is IntersectionObserver-backed, so it is also
-         correct inside a cross-origin store iframe, where innerHeight is the FRAME's
-         height and would report everything as visible. */
-      if (document.hidden) return;
-      if (window.AFMP && !window.AFMP.isOnScreen(viewport)) return;
-      var cur = gCurrent();
-      if (cur >= gMaxIndex()) { gGo(0); } else { gGo(cur + 1); }
-    }, 4200);
-  }
-
-  // Init + resize
-  gRenderDots();
-  gUpdateDots();
-  gRestart();
-  window.addEventListener('resize', function () {
-    gRenderDots();
-    gUpdateDots();
-  });
 
   /* ---------- Fresh clip URLs — the per-load token OPT-IN ----------
      ⛔ CURRENTLY UNUSED — no element on the page carries `data-fresh` any more (removed
@@ -7536,10 +7192,8 @@ html.dark .hero-copy-card:hover {
      With a single row the arrows stay disabled (dimmed), which is this page's own
      convention (.g-arrow:disabled). Add a second row and they come alive. */
   var HERO_SLIDES = [
-    { src: 'assets/videos/hero-grid.mp4',
-      tag: 'Objects', name: 'Rain' },
-    { src: 'assets/videos/panel-pile.mp4',
-      tag: 'Selection', name: 'Pile' }
+    { src: 'https://mr3dpageclips.carrd.co/assets/videos/video57.mp4',
+      tag: 'Objects', name: 'Rain' }
   ];
   (function heroSwitcher() {
     if (!heroBox || !heroVideo) return;
@@ -9319,1149 +8973,7 @@ html.dark .hero-copy-card:hover {
 })();
 </script>
 
-<!-- Interactive procedural background. Deferred so it can never delay the page's
-     own scripts, and kept as a FILE rather than inline: it is ~450 lines of
-     self-contained module with no dependency on anything in this document. -->
-<!-- ⛔ THE PARTICLE FIELD WAS REPLACED, owner: *"replace the animated live mouse
-     reactive particles with this"*. `assets/js/particle-field.js` is a port of the
-     supplied AetherFlow particle system — violet nodes, violet links, links turning
-     WHITE inside the cursor's 200px radius. The previous module
-     (`assets/js/interactive-bg.js`) is still on disk, UNREFERENCED, like
-     `brand-assemble.js` and `brand-title.js`. **Do not assume it is running.**
-     ⛔ The canvas element and its `#interactiveBg` id are unchanged — the CSS
-     (`position:fixed; z-index:-2`) is what places it, and it is the same element. -->
-<!-- ⛔⛔ INLINED, NOT LINKED. Owner: *"when i update the html on the page the background
-     elements don't show"*. This module was `<script src="assets/js/particle-field.js" defer>`
-     and it was the ONLY file the page needed from disk — reproduced by loading index.html
-     alone in an empty directory: the `#interactiveBg` canvas stayed at its default 300x150,
-     drew nothing, and the console showed one net::ERR_FILE_NOT_FOUND. Any update that carries
-     the HTML without the assets/ folder therefore lost the background network and nothing
-     else, which is exactly the symptom reported.
-     ⛔ Inlined in place, at the end of <body>: every element above it is already parsed, so
-     the module finds `#interactiveBg` without needing `defer` (which an inline script cannot
-     use anyway). Moving this block into <head> WOULD break it — the module returns early when
-     the canvas is missing, and silently.
-     ⛔ The file on disk (assets/js/particle-field.js) is now UNREFERENCED, like
-     brand-assemble.js and brand-title.js. Do not edit it expecting a change to appear.
-     ⛔ If it is ever linked again, delete this block — two copies of the module would start
-     two animation loops on the same canvas. -->
-<script>
-/* ============================================================================
-   ParticleField — a drifting node network with lines between neighbours.
-
-   Owner: *"replace the animated live mouse reactive particles with this"*, pasting
-   an AetherFlow hero whose canvas draws violet nodes joined by lines on black, with
-   the lines turning WHITE near the cursor.
-
-   ⛔⛔ THIS IS A FAITHFUL PORT OF THAT PARTICLE SYSTEM, NOT A REDESIGN. Node count,
-     sizes, velocities, edge bounce, the link threshold, the opacity falloff, the
-     cursor repulsion and the two line colours are all read off the supplied code:
-       nodes    (w * h) / 9000, size 1–3px, velocity ±0.2, bounce off the edges
-       colour   rgba(191,128,255,.8) dots
-       links    any pair whose SQUARED distance < (w/7)*(h/7)
-       opacity  1 - dist2/20000
-       lines    rgba(200,150,255,a) — rgba(255,255,255,a) when inside the cursor's
-                200px radius
-       cursor   particles within 200px are PUSHED AWAY, force = (R-d)/R * 5
-
-   ⛔⛔ FIVE THINGS THE ORIGINAL DOES WRONG AND THIS DELIBERATELY DOES NOT. The LOOK is
-     copied exactly; the defects are not, because each one is visible or costs something:
-       1. `dist < (w/7)*(h/7)` compares a SQUARED distance against a product of
-          lengths. It happens to give a sane link range at 16:9 and drifts badly at
-          other aspects. Kept as a squared comparison against the same number, so the
-          on-screen result is identical where the original looked right.
-       2. `rgba(…, ${opacityValue})` goes NEGATIVE once dist2 > 20000. A negative alpha
-          is an invalid colour, the assignment is IGNORED, and the stroke silently
-          keeps the PREVIOUS pair's colour. Clamped to 0 — same pixels, no stale lines.
-       3. `if (mouse.x && …)` is falsy at x === 0, so the leftmost 1px column never
-          lights up. Now an explicit null check.
-       4. The canvas is filled OPAQUE BLACK every frame. `#interactiveBg` sits at
-          `z-index:-2`, so that would erase the page's navy gradient — the ramp built
-          from the owner's thumbnail — and flatten the whole page. `clearRect` instead,
-          leaving the field transparent over the gradient. ⚠ To match the reference's
-          black exactly, swap `clearRect` for a black `fillRect`; that is the one line.
-       5. No `devicePixelRatio`, so the nodes are soft on any retina display. Sized at
-          DPR here.
-     ⛔ Also kept from this page's own conventions rather than the original: a
-       `prefers-reduced-motion` path that paints one static frame and stops, and a
-       `visibilitychange` pause so a hidden tab is not burning a frame budget.
-     ⛔ AND ONE THING THE ORIGINAL'S LOOP IS NOT ALLOWED TO DO HERE: it paints on every
-       callback the display offers. This one is capped at MAX_FPS (24) — a skipped
-       callback draws nothing at all — and scales its per-frame drift and cursor push by
-       the elapsed time, so the field still moves at the speed the constants were tuned
-       at. Both are described where they are defined, below the palette.
-   ========================================================================== */
-(function () {
-  'use strict';
-
-  var canvas = document.getElementById('interactiveBg');
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  var reduce = false;
-  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-
-  /* the supplied constants */
-  var DENSITY = 9000;            // node count = (w * h) / DENSITY
-  /* ⛔⛔ THE PAGE'S PALETTE, NOT THE REFERENCE'S VIOLET — owner: *"use the pages theme
-     colors"*. The AetherFlow original runs `rgba(191,128,255)` nodes and
-     `rgba(200,150,255)` links; violet appears NOWHERE else on this page, which is azure
-     throughout. Only the three colours change — every one of the reference's
-     BEHAVIOURS (count, sizes, velocities, link threshold, falloff, repulsion) is
-     untouched, so the field moves exactly as it did.
-     ⛔ The three take the page's own tokens rather than one flat colour: the nodes carry
-     the BRAND azure (`#0096ff`, the same value as `.btn-primary`, the coupon border and
-     the wordmark's middle span), while the LINKS stay in the muted blue-grey wireframe
-     family the page already used — a 1px line at full brand saturation reads as a
-     cable, not a wireframe. The cursor's highlight is the light cyan `#8fd8ff` that the
-     offer band and the ring glow already use, in place of the reference's pure white. */
-  var NODE_FILL = 'rgba(0, 150, 255, 0.9)';
-  var LINE_FAR = [110, 130, 190];
-  var LINE_NEAR = [143, 216, 255];
-  var FADE = 20000;              // opacity = 1 - dist2 / FADE
-  var CURSOR_R = 200;            // px
-  /* ⛔ HALVED, on the owner's word: *"reduce the repaltion instansity to 50%"*. The
-     supplied original uses 5, which it applies as `force * 5` per frame — a hard shove
-     that empties the whole 200px radius almost instantly.
-     ⛔ This scales the STRENGTH of the push, not its REACH: `CURSOR_R` is untouched, so
-     the cursor still clears the same circle, it just does it more gently and the field
-     takes longer to settle. Halving the radius instead would have made the cursor
-     affect a smaller area, which is a different change. */
-  var PUSH = 2.5;
-  var SIZE_MIN = 1, SIZE_MAX = 3;
-
-  /* ------------------------------------------------------------- the frame cap
-     ⛔⛔ THE FIELD IS CAPPED AT 24 PAINTED FRAMES A SECOND, ON EVERY DISPLAY.
-     This is a background field of 1–3px dots drawn behind a document that also runs
-     video, CSS animation and a store page around it. It was painting on every rAF —
-     60 times a second on an ordinary screen, 120 or 144 on a gaming one — and the
-     work per paint is not trivial: a clearRect over the whole canvas, an O(n) step
-     over the visible nodes and an O(visible²) link pass with a canvas stroke per pair
-     (see the cost note at the top of this file, and PERFORMANCE.md). The field's own
-     motion is a slow drift; at 24fps it is indistinguishable, at 144fps it is 6× the
-     painting for the same picture. */
-  var MAX_FPS = 24;
-  var FRAME_MS = 1000 / MAX_FPS;   // 41.67ms — the shortest gap between two PAINTED frames
-  /* ⛔⛔ THE ONE-NANOSECOND TOLERANCE, AND WHY IT IS NOT A CATCH-UP SCHEME.
-     1000/24 does not divide into any display's frame period, and the timestamps arrive
-     as floating point: a 120Hz display offers its 5th callback at 41.666666666666671ms
-     and a 144Hz one its 6th at the same number, but the subtraction `t - lastT` lands on
-     either side of 41.666666666666664 depending on which multiple of the period each
-     timestamp happens to round to. Compared exactly, that coin-flip drops a paint every
-     few frames and the cadence falls from 24 to ~20 a second — measured on a synthetic
-     120Hz clock, not assumed. The window below is a nanosecond wide, and the next
-     display frame is 7ms away, so it can never admit a frame the cap would otherwise
-     refuse: the hard ceiling is still 1000/24 ms, to a nanosecond. */
-  var FRAME_EPS = 1e-6;
-  /* ⛔ THE OLD TICK. The drift (±0.2px) and the cursor push (PUSH = 2.5px) are per-frame
-     constants that were tuned against a nominal 60fps loop. Painting 2.5× less often
-     with the same constants would move the field at 40% of its speed, which is a
-     different picture, not a cheaper one — so both are multiplied by the elapsed time
-     since the last paint, expressed in these units. */
-  var STEP_MS = 1000 / 60;
-  /* ⛔ AND THE SCALE IS BOUNDED. A tab that was throttled, a long task, a breakpoint
-     hit in devtools: the next callback can arrive hundreds of milliseconds late, and
-     unbounded scaling would teleport every node across the screen in one frame. Three
-     old ticks is exactly the 60Hz worst case below (a 50ms gap), so nothing in normal
-     playback is ever clamped; only a genuine stall is, and it resumes at 3× for one
-     frame instead of catching up frame-for-frame. */
-  var MAX_K = 3;
-  var lastT = -1;                // the timestamp of the last PAINTED frame; -1 = none yet
-  var frameDt = STEP_MS;         // the elapsed time that paint is scaled by
-
-  var W = 0, H = 0, DPR = 1, linkDist2 = 0;
-  /* ⛔⛔ THE ONE QUALITY KNOB FOR THIS CANVAS. 0.5 = the backing store is rasterised at half
-     the effective device ratio, in BOTH dimensions, so the pixel count is a QUARTER of what
-     it was — see the note in `measure()` where it is applied, after the device cap. It is a
-     constant rather than an expression on purpose: 1 restores the old full-resolution store
-     exactly, with nothing else to undo. ⛔ IT GOVERNS THE PARTICLE FIELD ONLY — `.gif-poster`
-     canvases, the clip bars and every other canvas on the page are sized elsewhere and are
-     untouched. */
-  var CANVAS_QUALITY = 0.5;
-  var appliedDPR = 0;            // the ratio the live backing store was last sized for
-  var docW = 0, docH = 0;        // the field's own extent — the whole DOCUMENT
-  var parts = [];
-  var vis = [];                  // reused each frame: no allocation in the loop
-  /* ⛔⛔ THE CURSOR IS STORED EXACTLY AS THE EVENT REPORTED IT — in the FRAME's CLIENT
-     coordinates — and is converted to canvas coordinates at the moment it is compared
-     against a node (see cursorCanvas()). It used to be compared raw, which is correct
-     only while the canvas box starts at the top of the frame: in a store embed the box
-     is MOVED down to the band the parent is showing (`originY`), so a pointer at client
-     y 8500 sat over a box whose canvas y was 500, the two never matched, and the field
-     went inert under the cursor for every visitor who was scrolled past the first
-     screenful. Storing the raw value is what makes this immune to the box moving: the
-     conversion reads `originY` when it is used, so a band reposition cannot leave a
-     stale coordinate behind. */
-  var mouse = { x: null, y: null };
-  var curX = null, curY = null;  // the same cursor in CANVAS px, rebuilt on every read
-  var raf = 0, started = false, visible = true;
-  /* ⛔ `bandEmpty`: the sentinel ladder MEASURED the frame as off the parent's screen.
-     `canvasOn`: this canvas is inside the visible area per the same observer. Both are
-     gates on the frame loop — one for a frame nobody is looking at, one for a box that
-     has been moved off the band the parent is showing. */
-  var bandEmpty = false, canvasOn = true;
-  var MAX_NODES = 2600;          // guard: the update pass is O(n), the connect O(visible^2)
-  /* Particle count is 40% of the original baseline; cap1040, retaining24FPS. */
-  var COUNT_DIVISOR = 2.5; // 40% of original baseline; maximum 1040 particles.
-
-  /* ------------------------------------------------------- clip rectangles
-     ⛔⛔ NO NODE AND NO LINE MAY PAINT INSIDE A CLIP RECTANGLE — including the
-     transparent parts of a video, and including clips whose box moves after load
-     (a carousel page swap, an accordion opening, a resize, a rotated phone).
-     Three mechanisms, because each one alone leaves a hole:
-       1. SEEDING — a node is never placed inside a media box (rejection sampling).
-       2. EVICTION — step() pushes any node a layout change traps back out through the
-          nearest edge and reverses its drift, so the field cannot be "behind" a clip.
-       3. REJECTION AT PAINT — draw() skips a node that is inside one, and connect()
-          drops any link whose SEGMENT crosses one (a straight line between two legal
-          nodes can still cut the corner of a clip). A canvas-level even-odd clip is
-          applied on top as the last line of defence.
-     ⛔ NOTHING HERE READS LAYOUT PER PARTICLE. The rectangles are measured once per
-     BATCH (a coalesced rAF), then every per-node and per-pair test is arithmetic. */
-  var CLIP_SEL = 'video, iframe, .yt-frame, .gif-clip';
-  /* the safe padding: a node sitting exactly on a clip's edge still reads as "behind
-     it" once the 1px link stroke and the 1–3px node radius are drawn */
-  var CLIP_PAD = 14;
-  var clipRects = [];            // DOCUMENT space, merged so the even-odd mask is exact
-  var clipRectsV = [];           // reused: the same rectangles in canvas space
-  var clipRectCount = 0;
-  var docClipPath = null;        // Path2D in document space, rebuilt only on a re-measure
-  var clipDirty = true;
-  var clipRaf = 0;
-  /* ⛔⛔ THE CANVAS IS BOUNDED. This element is position:fixed, so inside a store
-     iframe that is 16000px tall its box IS 16000px tall — 74M device pixels at DPR 2,
-     ~300MB of backing store, allocated before a single node is drawn. In a normal
-     window nothing changes (innerHeight is far below the cap). In a tall frame the box
-     is capped and MOVED over the band the parent can actually see. */
-  var MAX_CANVAS_H = 1800;
-  var originY = 0;               // the canvas box's top edge, in CLIENT px
-  /* ⛔ THE OTHER HALF OF THE SAME TRANSFORM. This used to be zero BY CONSTRUCTION (the
-     box was `position:fixed; left:0; width:100%`); it is not any more, because the box
-     is now the RAIL — the centred column the section dividers draw — so its left edge is
-     a measured value and every conversion below folds it in. It is one variable in one
-     place precisely so that stays true: `computeViewport`, `cursorCanvas` and the clip
-     mask's document-space translate all read it, and a miss in any one of them puts the
-     cursor 90px from the nodes it is over. */
-  var originX = 0;
-
-  /* ============================================================================
-     THE RAIL — the centred column the whole field lives inside.
-
-     ⛔⛔ WHAT IT IS. Every section divider on this page is a `::before` on
-     `.section` / `.gallery-section` / `.catalog-section` / `.site-footer`, drawn
-     `width: min(1180px, 92%)` and centred (`left:50%; translateX(-50%)`). That column —
-     not the window — is the field's rail: the canvas box IS the rail, the nodes are
-     seeded inside it, they bounce off its two edges, and their radius is kept inside it,
-     so nothing can paint outside the divider's own width.
-     ⛔ IT IS MEASURED, NOT ASSUMED. The two numbers that define it are read off the real
-     layout at measure time — the USED width of the divider's `::before` box and the box
-     of a real section — so a media query, a container change or an edit to the CSS token
-     moves the seam and the field together. Re-deriving `min(1180px, 92%)` in JavaScript
-     would have been the same number today and a second source of truth tomorrow.
-     ⛔ AND IT IS MEASURED ONCE PER LAYOUT CHANGE, NEVER PER FRAME. `getComputedStyle` on
-     a pseudo-element is a style resolve; the whole module reads layout in exactly three
-     places — `measure()` (a rebuild, a resize that has settled, a band move), the
-     coalesced rect flush (one rAF per burst, and only when the viewport width actually
-     changed), and nowhere else. No per-node, per-pair or per-frame path touches the DOM.
-     ⛔ IN DOCUMENT SPACE. `railX0`/`railX1` are the rail's edges in the same space the
-     nodes are simulated in, so the bounce, the clamp and the clip eviction are all plain
-     arithmetic against them; `originX` is the same rail's left edge in CLIENT pixels, for
-     the fixed canvas box and the cursor. Horizontal scroll is the one thing that moves
-     one without the other, which is why `railCX` (the centre, in document space, which
-     scroll cannot move) is the value kept and `originX` is derived from it. */
-  var railX0 = 0, railX1 = 1;    // the rail's edges, DOCUMENT space
-  var railCX = 0.5;              // its centre, DOCUMENT space — stable under scroll
-  var railVw = -1;               // the viewport width the rail above was measured at
-  /* ⛔ the only selector that has a divider; the FIRST match is the probe, because every
-     section shares one rule and one width */
-  var RAIL_SEL = '.section, .gallery-section, .catalog-section, .site-footer';
-
-  /* ------------------------------------------------------------- sizing
-     ⛔⛔ THE CANVAS STAYS VIEWPORT-SIZED, BUT THE FIELD DOES NOT.
-     Owner: *"why the background is locked to view i want new particles to appear when i
-     scroll"*. The canvas is still `position: fixed` and still one screenful — but the
-     PARTICLES are seeded across the whole DOCUMENT and drawn at their scroll offset, so
-     scrolling walks through a field far larger than the window and new ones come into
-     view. Two reasons it is done this way rather than by making the element
-     document-sized:
-       1. a document-sized canvas is ~18.5M px here (74M at DPR 2 — roughly 300MB of
-          backing store), against 1.1M for the viewport-sized one;
-       2. the reference's density formula, applied to a 13,000px-tall page, asks for
-          ~2,060 nodes, and its connect pass is O(n²) — about 4 MILLION distance checks
-          per frame. Here the same field costs one O(n) pass to update and an O(visible²)
-          pass to link, which is ~150–200 nodes and ~20k checks.
-     ⛔ The link range stays tied to the CANVAS's own box `(W/7)*(H/7)`, exactly as the
-     reference computes it against its canvas. The canvas box is now the RAIL rather than
-     the window, so the range is about a seventh of the column instead of a seventh of
-     the viewport — slightly shorter links on a desktop (≈208px against ≈230px at 1440),
-     which is the same rule applied to the box it is actually drawn in. Tying it to the
-     DOCUMENT instead would make every pair within hundreds of pixels connect and the
-     field would read as a web. */
-  function measure(forceRail) {
-    DPR = Math.min(2, window.devicePixelRatio || 1);
-    var vh = window.innerHeight;
-    /* ⛔⛔ THE BAND THE VISITOR CAN ACTUALLY SEE. In an ordinary window it is the whole
-       viewport and `originY` stays 0 — nothing about this page's own behaviour changes.
-       In a store embed the frame is as tall as the document, so `innerHeight` says
-       nothing; `AFMP.band()` is the sentinel ladder's answer (or a configured parent
-       bridge's, which is exact) in THIS document's client pixels, which is the space a
-       `position:fixed` box is placed in — so the box is moved onto the band and the
-       backing store stays viewport-sized instead of 16000px tall. */
-    var b = (window.AFMP && window.AFMP.band) ? window.AFMP.band() : null;
-    var embeddedFrame = !!(window.AFMP && window.AFMP.embedded);
-    var h;
-    /* ⛔ "MEASURED AS INVISIBLE" AND "NO ANSWER YET" ARE DIFFERENT STATES.
-       · band.height === 0 is a MEASUREMENT: the frame is off the parent's screen.
-         Nothing is drawn and the frame loop is stopped outright — there is no honest
-         band to move to.
-       · band === null is NO ANSWER (no IntersectionObserver, an engine that never
-         reports, or a plain window). The pre-existing behaviour stands, which is the
-         viewport — capped, so a tall frame can never allocate a 16000px canvas. */
-    if (embeddedFrame && b && !(b.height > 0)) { bandEmpty = true; return false; }
-    bandEmpty = false;
-    if (embeddedFrame && b) {
-      originY = Math.max(0, b.top || 0);
-      h = Math.min(b.height, MAX_CANVAS_H);
-    } else if (vh > MAX_CANVAS_H) {
-      originY = 0;
-      h = MAX_CANVAS_H;
-    } else {
-      originY = 0;
-      h = vh;
-    }
-    if (!(h >= 1)) h = 1;
-    H = h;
-    /* ⛔⛔ THE WIDTH IS THE RAIL'S, NOT THE WINDOW'S. `placeRail` reads the divider's own
-       used width and places the box on it; the height above is still the band-capped
-       viewport height, because the rail is a column and has no height of its own.
-       ⛔ AND IT IS RE-PROBED ONLY WHEN IT CAN HAVE MOVED. `reposition()` runs on every
-       band move — several times a second while a parent page is scrolled — and the rail
-       does not depend on the band at all, so a probe there would be a style resolve per
-       scroll frame of somebody else's page for an answer that cannot have changed. The
-       viewport width is the one input that moves it; `rebuild()` passes true because a
-       settled resize, a rotation, a landing web font and the first run all have to
-       re-read it regardless of what the width says. */
-    if (forceRail || viewportW() !== railVw || !(W >= 1)) placeRail();
-    /* ⛔⛔ ASSIGNING canvas.width REALLOCATES AND CLEARS THE BACKING STORE, so it is done
-       only when the pixel size actually changed. This function runs on every band move
-       — several times a second while the parent page is scrolled — and the band moves
-       by changing `originY` alone: W, H and DPR are untouched, so the assignment was
-       re-allocating and blanking W×H×DPR² pixels for nothing, on the parent's scrolling
-       thread. Nothing about the picture changes: the animated loop clears and repaints
-       every frame either way, and the reduced-motion path repaints through paintOnce(). */
-    /* ⛔⛔ THE BACKING STORE IS RENDERED AT HALF THE EFFECTIVE RATIO (owner, 2026-10-11:
-       *"set particle CANVAS backing resolution to HALF current effective DPR in BOTH
-       dimensions (quality scale 0.5 applied after existing device DPR cap), keeping CSS
-       dimensions, nodecount, motion, 24fps, origin/clipping/cursor coordinates unchanged"*).
-       ⛔ `DPR` ITSELF IS NOT TOUCHED. It is still `min(2, devicePixelRatio)` from the top of
-       this function, and it is still what the rest of the module reasons about. What is new
-       is `back` — the scale the CANVAS is actually rasterised at — and it is `DPR * 0.5`,
-       i.e. the quality step is applied AFTER the device cap, so the backing ratio is 0.5 on
-       an ordinary screen and 1.0 on a 2x one (rather than 0.5 of an uncapped 3 or 4).
-       ⛔ THE PIXEL COUNT IS THEREFORE A QUARTER, AND THAT IS THE POINT: 1440x900 of CSS box
-       was 1.30M device pixels at ratio 1 and is 324k now. The picture is upscaled by the
-       browser from the smaller store, so the field is softer — the owner's call, taken on a
-       BACKGROUND of 1-3px dots behind a page whose foreground is video.
-       ⛔ WHAT DID NOT MOVE, and each one is a coordinate system that would have shifted the
-       field if it had: `W`/`H` are still CSS pixels and are still what `canvas.style.width`
-       and `.height` are set to; `originX`/`originY`, `railX0/railX1`, `linkDist2`, every
-       node's `x/y` and `vx/vy`, the clip rectangles and `cursorCanvas()` all stay in that
-       same CSS space. The ONLY change is the transform below, which maps CSS px to the
-       smaller store — so a node at CSS (x,y) still lands on the same screen pixel, and the
-       canvas box, the clip mask, the cursor repulsion and the band alignment are bit-for-bit
-       where they were. Nothing else in this module reads `DPR`.
-       ⛔ AND THE 0.5 CANNOT BE UNDONE BY A CLAMP: `back` has its own floor (a non-positive
-       ratio would make every coordinate collapse to the origin, and a silently-kept-old
-       transform would draw at the wrong scale), and `appliedDPR` — the value the live store
-       was last sized for — now tracks `back`, not `DPR`, so the "ratio changed but the pixel
-       box did not" branch re-sets the transform for a quality change exactly as it did for a
-       monitor change. */
-    var back = DPR * CANVAS_QUALITY;
-    if (!(back > 0.1)) back = 0.1;
-    var pxW = Math.round(W * back), pxH = Math.round(H * back);
-    if (canvas.width !== pxW || canvas.height !== pxH) {
-      canvas.width = pxW;
-      canvas.height = pxH;
-      ctx.setTransform(back, 0, 0, back, 0, 0);
-      appliedDPR = back;
-    } else if (appliedDPR !== back) {
-      /* the pixel box is unchanged but the ratio behind it is not (a monitor change, a zoom
-         that left the element the same size, or a quality step): the transform still has to
-         follow */
-      ctx.setTransform(back, 0, 0, back, 0, 0);
-      appliedDPR = back;
-    }
-    /* ⛔ ONLY WHAT MOVED IS WRITTEN. `top` is the one that genuinely changes per band
-       move (that is the box following the parent's window down the page); `width`,
-       `height` and `left` are almost always the value already there, and re-writing an
-       inline style with the value it already holds still dirties the element's style and
-       leaves the next layout read to pay for it — on the parent's scroll thread. The
-       read-back below is an inline-style lookup, not a layout read. */
-    var cw = W + 'px', chh = H + 'px', ctop = originY + 'px', cleft = originX + 'px';
-    if (canvas.style.width !== cw) canvas.style.width = cw;
-    if (canvas.style.height !== chh) canvas.style.height = chh;
-    if (canvas.style.top !== ctop) canvas.style.top = ctop;
-    if (canvas.style.left !== cleft) canvas.style.left = cleft;
-    linkDist2 = (W / 7) * (H / 7);
-    /* ⛔ the DOCUMENT's size, not the window's — this is what the field is seeded across.
-       ⚠ IT IS NOT THE RAIL'S SIZE, AND THAT IS THE POINT: the baseline is
-       `round(docW * docH / DENSITY)`, capped, and the rail narrowing underneath it does
-       not take a single node out of that baseline — the same 2560 (now divided by
-       COUNT_DIVISOR, so 1024) live in a narrower column as in a wide one. Narrowing the
-       rail moves the picture; it must never move the count. */
-    var prevW = docW, prevH = docH;
-    /* ⛔ THE LADDER'S READING WHEN THERE IS ONE. Those two numbers are the same document
-       box this needs, and the ladder already pays for reading them on a coalesced frame;
-       `measure()` runs synchronously inside EVERY band move — several times a second
-       while the buyer scrolls the parent page — and a `scrollHeight` read there is a
-       forced layout on that frame, after this same function has just written four
-       properties to the canvas box. `AFMP.docH`/`docW` are 0 until the ladder has
-       measured once, and 0 falls back to reading layout exactly as before. */
-    var sh = (window.AFMP && window.AFMP.docH) || document.documentElement.scrollHeight || 0;
-    var sw = (window.AFMP && window.AFMP.docW) || document.documentElement.scrollWidth || 0;
-    docW = Math.max(W, sw);
-    docH = Math.max(H, sh);
-    /* ⛔ the caller only has to RE-SEED when the document itself changed size. The band
-       moves several times per parent scroll and re-seeding 1300 nodes every time would
-       put a heap of garbage on the parent's scroll thread. */
-    return (Math.abs(docW - prevW) > 8 || Math.abs(docH - prevH) > 8);
-  }
-
-  /* ------------------------------------------------------------- the rail
-     ⛔⛔ ONE PROBE, TWO CALLERS, NO PER-FRAME READ. `placeRail` is the only thing that
-     writes W, originX and the rail's edges, and it is called from exactly two places: the
-     full `measure()` (a rebuild, a settled resize, a band move) and the coalesced rect
-     flush, which calls it only when the viewport width has actually changed.
-     ⛔ WHAT IT READS, AND WHY THOSE TWO THINGS.
-       · `getComputedStyle(section, '::before').width` — the USED width of the divider
-         itself. This is the only honest source for "the rail": reading the CSS token
-         would be a second copy of `min(1180px, 92%)`, and a copy is what drifts.
-       · `section.getBoundingClientRect()` — the box that pseudo-element is centred in.
-         The `::before` is `left:50%; translateX(-50%)` of the section's PADDING box, so
-         its centre is the padding box's centre; the border widths are subtracted rather
-         than assumed to be zero (`.site-footer` carries one).
-     ⛔ AND WHAT HAPPENS WHEN IT CANNOT BE READ. A browser that will not report a
-     pseudo-element's box (or a document with no sections at all) leaves the rail at the
-     full viewport width — which is exactly where the field lived before this pass. It is
-     a strictly worse picture than the rail and a strictly better failure than a field
-     squeezed into a zero-width column, and it is the pre-existing behaviour either way.
-     ⛔ THE VERTICAL SCROLL TERM IS NOT IGNORED: `getBoundingClientRect()` is in CLIENT
-     pixels and `railX0` is in DOCUMENT pixels, so the two differ by exactly `scrollX`.
-     `railCX` keeps the document-space centre — the one value a horizontal scroll cannot
-     move — and `originX` is derived from it against the CURRENT scroll on every call, so
-     a sideways scroll can never leave the box over the wrong column or the cursor
-     converted against a stale origin. */
-  /* ⛔⛔ THE WIDTH THE RAIL IS DERIVED FROM — and it is the CLIENT width, not
-     `window.innerWidth`. The two differ by the vertical scrollbar, and the rail does not
-     get to be 7px off centre the moment a section grows tall enough to produce one: the
-     divider's `92%` resolves against the section's own box, which is the client width, so
-     that is the number its centre has to be computed from. It is also the key the rail is
-     cached against — a scrollbar appearing changes this without changing `innerWidth`, and
-     a guard that watched `innerWidth` would keep serving the old measurement. */
-  function viewportW() {
-    var de = document.documentElement;
-    var cw = de ? de.clientWidth : 0;
-    return (cw > 0) ? cw : window.innerWidth;
-  }
-
-  function placeRail() {
-    var vw = viewportW();
-    railVw = vw;
-    var w = 0, cx = vw / 2;                 // the no-answer default: the whole viewport
-    if (typeof document !== 'undefined' && typeof document.querySelector === 'function' &&
-        typeof window.getComputedStyle === 'function') {
-      var sec = null, cs = null, r = null;
-      try { sec = document.querySelector(RAIL_SEL); } catch (e) { sec = null; }
-      if (sec && sec.getBoundingClientRect) {
-        try { cs = window.getComputedStyle(sec, '::before'); r = sec.getBoundingClientRect(); }
-        catch (e) { cs = null; r = null; }
-      }
-      if (cs && r && r.width > 0) {
-        var pw = parseFloat(cs.width);
-        /* ⛔ `pw <= r.width` is the sanity gate: a pseudo-element wider than the section
-           it is centred in is not this page's divider, and it is the shape a wrong answer
-           takes (a stray `width:100%`, or a computed value that resolved to `auto` and
-           was parsed as a number). Where the two disagree, the real box wins. */
-        if (isFinite(pw) && pw > 0 && pw <= r.width + 1) {
-          var bl = parseFloat(cs.borderLeftWidth), br = parseFloat(cs.borderRightWidth);
-          if (!(bl > 0)) bl = 0;
-          if (!(br > 0)) br = 0;
-          var padW = r.width - bl - br;
-          if (padW > 0) { cx = r.left + bl + padW / 2; w = pw; }
-        }
-      }
-    }
-    if (!(w > 0)) { w = vw; cx = vw / 2; }
-    if (!(w >= 1)) w = 1;
-    var sx = window.scrollX || 0;
-    W = w;
-    railCX = cx + sx;                       // document space — scroll cannot move it
-    railX0 = railCX - W / 2;
-    railX1 = railX0 + W;
-    originX = railCX - W / 2 - sx;
-  }
-
-  /* ⛔ THE CHEAP HALF, for the one thing a horizontal scroll changes: where the fixed box
-     sits over the rail. Pure arithmetic against the cached centre — no layout read, no
-     style resolve — so it is safe to call from the coalesced flush, and it writes
-     `style.left` only when the value actually moved. Returns whether it did, so the
-     reduced-motion still can be repainted on the frame the box moved under it. */
-  function followRail() {
-    var ox = railCX - W / 2 - (window.scrollX || 0);
-    if (ox === originX) return false;
-    originX = ox;
-    canvas.style.left = ox + 'px';
-    return true;
-  }
-
-  /* ============================================================
-     CLIP RECTANGLES — measured once per batch, never per particle
-     ============================================================ */
-  function collectClipRects() {
-    clipRects.length = 0;
-    var els;
-    try { els = document.querySelectorAll(CLIP_SEL); } catch (e) { els = []; }
-    var sx = window.scrollX || 0, sy = window.scrollY || 0;
-    for (var i = 0; i < els.length; i++) {
-      var el = els[i];
-      /* ⛔ getClientRects() first: a clip inside a hidden tab panel or a collapsed
-         accordion has no boxes at all, and getBoundingClientRect() would otherwise
-         hand back a 0x0 rect at the document origin and blank the field there. */
-      if (!el.getClientRects || el.getClientRects().length === 0) continue;
-      var r = el.getBoundingClientRect();
-      if (r.width < 8 || r.height < 8) continue;
-      clipRects.push({
-        x0: r.left + sx - CLIP_PAD,
-        y0: r.top + sy - CLIP_PAD,
-        x1: r.right + sx + CLIP_PAD,
-        y1: r.bottom + sy + CLIP_PAD
-      });
-    }
-    mergeClipRects();
-  }
-
-  /* ⛔ MERGED, because the canvas mask is an EVEN-ODD path: two overlapping holes
-     cancel each other out and the overlap would be painted again. Merging first makes
-     the mask exact no matter how the clips are laid out. n is small (one box per
-     clip), so the pairwise pass costs nothing. */
-  function mergeClipRects() {
-    var changed = true, i, j, a, b;
-    while (changed) {
-      changed = false;
-      for (i = 0; i < clipRects.length && !changed; i++) {
-        a = clipRects[i];
-        for (j = i + 1; j < clipRects.length; j++) {
-          b = clipRects[j];
-          if (a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1) {
-            if (b.x0 < a.x0) a.x0 = b.x0;
-            if (b.y0 < a.y0) a.y0 = b.y0;
-            if (b.x1 > a.x1) a.x1 = b.x1;
-            if (b.y1 > a.y1) a.y1 = b.y1;
-            clipRects.splice(j, 1);
-            changed = true;
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  function buildDocClipPath() {
-    if (!clipRects.length || typeof window.Path2D !== 'function') { docClipPath = null; return; }
-    var p = new window.Path2D();
-    p.rect(0, 0, docW, docH);
-    for (var i = 0; i < clipRects.length; i++) {
-      var r = clipRects[i];
-      p.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
-    }
-    docClipPath = p;
-  }
-
-  /* document space, arithmetic only */
-  function insideClip(x, y) {
-    for (var i = 0; i < clipRects.length; i++) {
-      var r = clipRects[i];
-      if (x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1) return true;
-    }
-    return false;
-  }
-
-  /* ⛔ THE EVICTION: out through the NEAREST edge, with the drift reversed so the node
-     leaves rather than being dragged straight back in on the next frame.
-     ⛔⛔ AND ONLY THROUGH AN EDGE THE RAIL CAN HONOUR. This is the trap that a narrowed
-     field creates and a full-width one never showed. A node trapped inside a media box
-     whose padded left edge sits just outside the rail would be pushed to that edge — and
-     the very next thing to touch it, the rail clamp in `constrain()`, would put it back
-     inside the box. Push, clamp, push, clamp: a node oscillating between two positions
-     forever, never drawn (draw() skips anything inside a clip) and never at rest.
-     ⛔ An edge that would land outside the rail (or outside the document) is priced at
-     Infinity instead of being chosen, so the nearest HONOURABLE edge wins: a landscape
-     clip always has a top or a bottom edge inside the rail, so the node leaves through
-     it and stays out. `Infinity` rather than a skip is deliberate — it loses every
-     comparison without needing a second pass over the four distances.
-     ⛔ AND IF NO EDGE IS HONOURABLE — a rectangle covering the whole rail and the whole
-     document, which no clip on this page is — the node is left where it is. That is a
-     bounded, terminating answer rather than a retry: draw() keeps it off the canvas, and
-     nothing loops. */
-  function pushOut(p) {
-    for (var i = 0; i < clipRects.length; i++) {
-      var r = clipRects[i];
-      if (p.x <= r.x0 || p.x >= r.x1 || p.y <= r.y0 || p.y >= r.y1) continue;
-      var dl = p.x - r.x0, dr = r.x1 - p.x, dt = p.y - r.y0, db = r.y1 - p.y;
-      if (!(r.x0 >= railX0 + p.size)) dl = Infinity;      // would land left of the rail
-      if (!(r.x1 <= railX1 - p.size)) dr = Infinity;      // would land right of it
-      if (!(r.y0 >= 0)) dt = Infinity;           // would land above the document
-      if (!(r.y1 <= docH)) db = Infinity;        // or below it
-      var m = dl;
-      if (dr < m) m = dr;
-      if (dt < m) m = dt;
-      if (db < m) m = db;
-      if (m === Infinity) continue;
-      if (m === dl) { p.x = r.x0; p.dx = -Math.abs(p.dx); }
-      else if (m === dr) { p.x = r.x1; p.dx = Math.abs(p.dx); }
-      else if (m === dt) { p.y = r.y0; p.dy = -Math.abs(p.dy); }
-      else { p.y = r.y1; p.dy = Math.abs(p.dy); }
-    }
-  }
-
-  /* ⛔⛔ THE ONE PLACE A NODE IS HELD INSIDE THE RAIL, and it is the LAST thing `step()`
-     does — after the drift and after the cursor's push — so nothing can carry a node out
-     of the column for even one frame. Two edges, both inclusive of the node's own radius:
-     a node of size 3 stops 3px short of each edge, so the circle it is drawn as cannot
-     cross the divider's width. That is the difference between "the seed avoids the edges"
-     and "the field is physically inside the rail".
-     ⛔ IT ALSO REPLACES THE OLD BOUNCE, WHICH FLIPPED THE SIGN UNCONDITIONALLY. A node
-     the cursor had just pushed past the edge while drifting BACK towards the middle had
-     its drift reversed by the old test — sent further out rather than allowed home. Here
-     the position is clamped first and the sign is only flipped when the node was actually
-     moving outwards; a node that is inside the rail and moving inwards is untouched.
-     ⛔ THE VERTICAL BOUNDS COME ALONG FOR THE SAME REASON: the old test only flipped `dy`
-     past `docH` and past 0 without clamping, so a node could sit outside the document for
-     a frame with nothing to bring it back. Same clamp, same conditional flip.
-     ⛔ A RAIL NARROWER THAN THE NODE ITSELF (a degenerate measurement, or a rail collapsed
-     to a sliver) would make `lo > hi` and every clamp a fight; the node is parked on the
-     centre line instead, which is the only position the rail can honour. */
-  function constrain(p) {
-    var lo = railX0 + p.size, hi = railX1 - p.size;
-    if (hi < lo) { lo = hi = (railX0 + railX1) / 2; }
-    if (p.x < lo) { p.x = lo; if (p.dx < 0) p.dx = -p.dx; }
-    else if (p.x > hi) { p.x = hi; if (p.dx > 0) p.dx = -p.dx; }
-    if (p.y < 0) { p.y = 0; if (p.dy < 0) p.dy = -p.dy; }
-    else if (p.y > docH) { p.y = docH; if (p.dy > 0) p.dy = -p.dy; }
-  }
-
-  /* ⛔ the segment test — a straight line between two legal nodes can still cross a
-     clip. Slab method against each rectangle, behind a bounding-box reject so the
-     common case (a link nowhere near a clip) costs four comparisons. It runs AFTER the
-     link-distance test, so it only sees the few hundred pairs that are actually drawn,
-     not the ~n²/2 that are rejected. */
-  function segBlocked(ax, ay, bx, by) {
-    var minX = ax < bx ? ax : bx, maxX = ax < bx ? bx : ax;
-    var minY = ay < by ? ay : by, maxY = ay < by ? by : ay;
-    for (var i = 0; i < clipRectCount; i++) {
-      var r = clipRectsV[i];
-      if (maxX < r.x0 || minX > r.x1 || maxY < r.y0 || minY > r.y1) continue;
-      var dx = bx - ax, dy = by - ay, t0 = 0, t1 = 1, s, u0, u1;
-      if (dx === 0) { if (ax < r.x0 || ax > r.x1) continue; }
-      else {
-        u0 = (r.x0 - ax) / dx; u1 = (r.x1 - ax) / dx;
-        if (u0 > u1) { s = u0; u0 = u1; u1 = s; }
-        if (u0 > t0) t0 = u0;
-        if (u1 < t1) t1 = u1;
-        if (t0 > t1) continue;
-      }
-      if (dy === 0) { if (ay < r.y0 || ay > r.y1) continue; }
-      else {
-        u0 = (r.y0 - ay) / dy; u1 = (r.y1 - ay) / dy;
-        if (u0 > u1) { s = u0; u0 = u1; u1 = s; }
-        if (u0 > t0) t0 = u0;
-        if (u1 < t1) t1 = u1;
-        if (t0 > t1) continue;
-      }
-      return true;
-    }
-    return false;
-  }
-
-  /* ---- the batched re-measure schedule ----
-     ⛔ ONE rAF PER BURST, however many triggers fire. Scroll fires dozens of times a
-     second, the ResizeObserver and the carousels fire on their own clocks, and the tab
-     can come back at any moment; all of them land on the same coalesced flush. */
-  function refreshClipRects() {
-    collectClipRects();
-    buildDocClipPath();
-  }
-  function flushClipRects() {
-    clipRaf = 0;
-    if (!clipDirty) return;
-    clipDirty = false;
-    /* ⛔ A LAYOUT CHANGE THAT HAS NOT SETTLED YET. A drag-resize, a rotation or a web
-       font landing fires this flush on its own frames, long before the 160ms debounce
-       calls rebuild(). The rail is re-read on those frames — but ONLY when the viewport
-       width actually changed, which is the one input that can move it, so an ordinary
-       scroll burst pays a comparison and nothing else. The re-SEED still waits for
-       rebuild(); this only re-places the box so the field cannot be drawn on a column
-       the dividers have already left. */
-    if (viewportW() !== railVw) measure();
-    followRail();    refreshClipRects();
-    /* ⛔ the same layout change that moved a clip box may also have lengthened or
-       shortened the DOCUMENT (an accordion, a tab panel, a carousel page, the web font
-       landing) — and the sentinel ladder's length is derived from the document height.
-       One coalesced rAF either way; this is not a second schedule. */
-    if (window.AFMP && window.AFMP.refreshSentinels) window.AFMP.refreshSentinels();
-    /* a node the new layout trapped is evicted NOW rather than on the frame it is next
-       stepped — every simulated node is already inside the viewport margin, so this
-       touches a couple of hundred objects, not the whole field.
-       ⛔ AND EVERY NODE IS RE-CLAMPED, not just the visible ones: a resize moves the rail
-       itself, and a node parked off screen outside the OLD rail's edges would otherwise
-       be drawn at that stale x for the frame it first appears. `constrain` has no inner
-       loop, so this is one arithmetic test per node. */
-    for (var i = 0; i < parts.length; i++) {
-      var q = parts[i];
-      if (q.on) pushOut(q);
-      constrain(q);
-    }
-    if (reduce) paintOnce();
-  }
-  function scheduleRects() {
-    clipDirty = true;
-    if (!clipRaf) clipRaf = requestAnimationFrame(flushClipRects);
-  }
-
-  function seed() {
-    parts = [];
-    /* ⛔ THE BASELINE IS min(round(area / DENSITY), MAX_NODES) — the reference's own
-       (w * h) / 9000 — and the field is seeded with a 40% of it (COUNT_DIVISOR = 2.5,
-       the owner's "particle count 40% of original"): 2600/2.5 = 1040 at or past the cap,
-       fewer under it. The cap is applied to the BASELINE; the divisor is not a second cap.
-       ⛔ THE AREA IS THE DOCUMENT'S, NOT THE RAIL'S. Narrowing the rail moves the picture
-       and must not move this number: the count is the owner's, it was restored once, and
-       nothing in this pass is allowed to take it away again. */
-    var baseline = Math.round((docW * docH) / DENSITY);
-    if (baseline > MAX_NODES) baseline = MAX_NODES;
-    var n = Math.round(baseline / COUNT_DIVISOR);
-    /* ⛔ THE HORIZONTAL BAND, INCLUSIVE OF THE RADIUS. `slo`/`shi` are the two positions a
-       node of that size can occupy with its whole circle inside the rail — the same
-       bounds `constrain()` enforces every frame, applied once here so the field starts
-       where it is going to live rather than being swept into it on the first frame.
-       ⛔ A rail too narrow for the node parks the seed on the centre line, which is the
-       position `constrain()` will keep it at. */
-    for (var i = 0; i < n; i++) {
-      var size = Math.random() * (SIZE_MAX - SIZE_MIN) + SIZE_MIN;
-      var slo = railX0 + size, shi = railX1 - size;
-      if (!(shi > slo)) slo = shi = (railX0 + railX1) / 2;
-      var x = 0, y = 0, tries = 0;
-      /* ⛔ SEEDED OUTSIDE THE CLIPS. The attempt count is bounded and the node is placed
-         anyway if it runs out, so `parts.length` is ALWAYS exactly `n` — the count is
-         the one thing this pass is not allowed to vary. A node that lands inside a clip
-         on the last attempt is skipped at paint time and evicted by step(). */
-      do {
-        x = slo + Math.random() * (shi - slo);
-        y = Math.random() * docH;
-        tries++;
-      } while (tries < 24 && insideClip(x, y));
-      var p = {
-        x: x,
-        y: y,
-        dx: Math.random() * 0.4 - 0.2,
-        dy: Math.random() * 0.4 - 0.2,
-        size: size,
-        vx: 0, vy: 0, on: false      // viewport coords + visibility, recomputed per frame
-      };
-      /* ⛔ THE TWO THINGS THE REJECTION LOOP CANNOT PROMISE, DONE ONCE PER NODE.
-         The loop is bounded at 24 attempts and places the node anyway when it runs out,
-         so a node CAN be seeded inside a clip — and on a rail this narrow that is no
-         longer a rare corner: a tall media box can cover most of the column, and 24
-         uniform draws inside it all land inside it. Pushing out here costs one pass over
-         the (few) clip rectangles per node, runs once at seed time, and means the field
-         is born where it belongs rather than being cleaned up over the first frames.
-         `constrain` after it is the radius clamp, for the node the push could not place.
-         ⛔ NEITHER CAN CHANGE THE COUNT: `p` is pushed unconditionally, exactly as before. */
-      if (clipRects.length) pushOut(p);
-      constrain(p);
-      parts.push(p);
-    }
-  }
-
-  /* -------------------------------------------------------------- frame
-     ⛔ The drift and the cursor repulsion both happen in DOCUMENT space, so a particle
-     keeps its position in the page while the window moves over it. Only the DRAW is
-     offset by the scroll. */
-
-  /* ⛔⛔ THE ONE PLACE THE CURSOR CHANGES SPACES. `mouse.x/y` are CLIENT px, straight
-     from the event; `p.vx/vy` are CANVAS px. The two differ by the canvas box's own
-     origin, which is the frame's top-left in an ordinary window and MOVES with the band
-     in an embed — so the subtraction is done here, on every read, and never cached
-     across a band reposition. Returns whether there is a cursor at all; the converted
-     pair is left in `curX`/`curY` for the caller's loop.
-     ⛔ NO SCROLL TERM. The box is `position:fixed`: the document scrolls under it, the
-     canvas does not scroll with it, and the scroll is already folded into `p.vx/vy` by
-     computeViewport(). Subtracting it again here would double-count it. */
-  function cursorCanvas() {
-    if (mouse.x === null || mouse.y === null) { curX = null; curY = null; return false; }
-    curX = mouse.x - originX;
-    curY = mouse.y - originY;
-    return true;
-  }
-
-  /* ⛔ the timestamp rAF hands a callback, or the clock if it was called without one —
-     a missing timestamp would make the gap below NaN, every comparison against it
-     false, and the cap silently stop existing. */
-  function nowMs() {
-    return (window.performance && window.performance.now) ? window.performance.now() : Date.now();
-  }
-
-  /* ⛔⛔ THE GATE. True = paint this frame; FALSE = do nothing at all and wait for the
-     next callback — no clearRect, no step pass, no link pass. Everything expensive in
-     the loop lives behind this one call.
-     ⛔ `lastT` is set to the timestamp that was just PAINTED, never advanced by whole
-     intervals (`lastT += FRAME_MS`): an accumulator that has fallen behind hands out
-     two paints 16ms apart the moment it catches up, which is the exact stutter this
-     cap is supposed to remove.
-     ⛔ The cost of gating on the display's own clock is that 24 does not divide into
-     60: on a 60Hz screen the frames land 50ms apart, i.e. an effective 20fps, which is
-     what the brief asked for rather than a timer-driven scheduler. 120Hz and 144Hz both
-     land on 41.7ms — a true 24. */
-  function frameDue(t) {
-    if (typeof t !== 'number' || !isFinite(t)) t = nowMs();
-    if (lastT < 0) {                 // nothing painted since the last start: paint now
-      lastT = t;
-      frameDt = STEP_MS;             // and at 1× — a resume is not a catch-up
-      return true;
-    }
-    frameDt = t - lastT;
-    if (frameDt < FRAME_MS - FRAME_EPS) return false;
-    lastT = t;
-    return true;
-  }
-
-  /* ⛔ elapsed time → the old 60fps tick's units, bounded (see MAX_K) */
-  function stepScale(dt) {
-    var k = dt / STEP_MS;
-    if (!isFinite(k) || k <= 0) return 0;
-    return k > MAX_K ? MAX_K : k;
-  }
-
-  function step(p, k) {
-    /* ⛔ a clip rectangle is a PHYSICAL exclusion zone, not just a painting one: a node
-       that a resize, a carousel step or an accordion opening has left inside a media box
-       is pushed out through its nearest edge here, before it is drawn anywhere.
-       ⛔ IT RUNS BEFORE THE DRIFT AND THE PUSH SO THAT `constrain()` AT THE END OF THIS
-       FUNCTION IS THE LAST WORD ON WHERE THE NODE IS. Every exit from this function now
-       passes through the same two bounds, whatever combination of clip eviction, cursor
-       repulsion and drift produced the position. */
-    if (clipRects.length) pushOut(p);
-
-    if (cursorCanvas()) {
-      /* ⛔⛔ THE VECTOR POINTS FROM THE CURSOR **TO** THE PARTICLE, AND IS THEN ADDED.
-         The supplied original writes `dx = mouse.x - this.x` (particle→cursor) and then
-         SUBTRACTS. When this was rewritten for document space the subtraction was kept
-         but the operands were swapped — `p.vx - mouse.x` — which silently turned the
-         repulsion into ATTRACTION and pulled the field into the cursor. The owner caught
-         it: *"the particles are now coming towards the mouse instead of repaling"*.
-         ⛔ Keep these two in step: swap the operand order and the sign must swap with it.
-         ⛔ `p.vx`/`p.vy` are the VIEWPORT coords and `p.x`/`p.y` the DOCUMENT ones, but the
-         two differ only by the scroll offset — a constant translation — so the DIRECTION
-         is identical in both spaces; `cursorCanvas()` has already put the cursor into the
-         same space as `p.vx/vy`, which is what makes the comparison mean anything. The
-         push itself is added to the DOCUMENT position, as before. */
-      var dx = p.vx - curX, dy = p.vy - curY;
-      var d = Math.sqrt(dx * dx + dy * dy);
-      if (d < CURSOR_R + p.size && d > 0.001) {
-        var f = (CURSOR_R - d) / CURSOR_R;
-        p.x += (dx / d) * f * PUSH * k;
-        p.y += (dy / d) * f * PUSH * k;
-      }
-    }
-
-    /* ⛔ scaled by the elapsed time: the STRENGTH and the reach are the constants above,
-       only the rate is held at the 60fps the field was tuned at */
-    p.x += p.dx * k;
-    p.y += p.dy * k;
-
-    /* ⛔⛔ LAST, AND UNCONDITIONALLY — the rail's two edges and the document's two, with
-       the node's own radius taken off the horizontal pair. See `constrain()`. This is the
-       line that makes "inside the divider's width" a property of the simulation rather
-       than of the seed: whatever the cursor pushed, whatever the drift did, the node is
-       inside the column before anything draws it. */
-    constrain(p);
-  }
-
-  function draw(p) {
-    /* ⛔ the belt to pushOut()'s braces: a node inside a clip is not painted even for
-       the single frame between the layout moving and the eviction running. */
-    if (clipRects.length && insideClip(p.x, p.y)) return;
-    ctx.beginPath();
-    ctx.arc(p.vx, p.vy, p.size, 0, 6.2832, false);
-    ctx.fillStyle = NODE_FILL;
-    ctx.fill();
-  }
-
-  function connect() {
-    var n = vis.length;
-    /* ⛔ ONCE FOR THE WHOLE PASS. The cursor test below depends only on `a`, and the
-       conversion reads the CURRENT box origin, so a band move between two frames can
-       never leave this pass comparing against where the cursor used to be. */
-    var hasCursor = cursorCanvas();
-    ctx.lineWidth = 1;
-    for (var a = 0; a < n; a++) {
-      var pa = vis[a];
-      /* ⛔ the cursor test is hoisted out of the inner loop: it depends only on `a`,
-         and the original recomputes it for every b. Same output, a fraction of the
-         work in the O(n^2) pass. */
-      var nearCursor = false;
-      if (hasCursor) {
-        var mx = pa.vx - curX, my = pa.vy - curY;
-        nearCursor = (mx * mx + my * my) < CURSOR_R * CURSOR_R;
-      }
-      var col = nearCursor ? LINE_NEAR : LINE_FAR;
-
-      for (var b = a + 1; b < n; b++) {
-        var pb = vis[b];
-        var ax = pa.vx - pb.vx, ay = pa.vy - pb.vy;
-        var d2 = ax * ax + ay * ay;
-        if (d2 >= linkDist2) continue;
-        /* ⛔ clamped — see note 2 at the top of the file */
-        var alpha = 1 - d2 / FADE;
-        if (alpha <= 0) continue;
-        if (alpha > 1) alpha = 1;
-        /* ⛔ a link is dropped when its SEGMENT crosses any clip rectangle — testing
-           only the endpoints is not enough, because the line between two legal nodes
-           can cut straight across a clip. */
-        if (clipRectCount && segBlocked(pa.vx, pa.vy, pb.vx, pb.vy)) continue;
-        ctx.strokeStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + alpha.toFixed(3) + ')';
-        ctx.beginPath();
-        ctx.moveTo(pa.vx, pa.vy);
-        ctx.lineTo(pb.vx, pb.vy);
-        ctx.stroke();
-      }
-    }
-  }
-
-  /* ⛔ ONE viewport pass, shared by the animated frame and the reduced-motion still —
-     `connect()` reads `vis`, so any path that draws MUST run this first or it links
-     against the previous frame's list. */
-  function computeViewport() {
-    /* ⛔⛔ BOTH ORIGINS, AND THEY ARE NOT INTERCHANGEABLE. `originY` is the canvas box's
-       own top in CLIENT px — 0 in every ordinary window, non-zero only when the box has
-       been moved over the band a parent frame can see. `originX` is its left edge, which
-       is no longer 0: the box is the RAIL, a centred column, so every node's x has to
-       come off by the same measured left edge the cursor does. The scroll is folded into
-       the same offset so the document-space field is projected onto the canvas box
-       exactly once — and it is `- sx - originX`, not `- sx`, because the box is fixed at
-       the rail's left edge rather than at the frame's. */
-    var sx = (window.scrollX || 0) + originX, sy = (window.scrollY || 0) + originY;
-    /* ⛔ a margin of one link range past each edge, or the links would POP as their
-       particles crossed the boundary — a pair is drawn while both ends are inside */
-    var M = Math.sqrt(linkDist2);
-    var i, p;
-    for (i = 0; i < parts.length; i++) {
-      p = parts[i];
-      p.vx = p.x - sx;
-      p.vy = p.y - sy;
-      p.on = (p.vx > -M && p.vx < W + M && p.vy > -M && p.vy < H + M);
-    }
-    vis.length = 0;
-    for (i = 0; i < parts.length; i++) if (parts[i].on) vis.push(parts[i]);
-
-    /* ⛔ the clip rectangles in CANVAS space, derived once per frame into a reused
-       array. segBlocked() and the even-odd mask read these, so no per-pair test ever
-       touches the DOM or allocates. */
-    var n = clipRects.length;
-    for (i = 0; i < n; i++) {
-      var r = clipRects[i];
-      var o = clipRectsV[i];
-      if (!o) { o = clipRectsV[i] = { x0: 0, y0: 0, x1: 0, y1: 0 }; }
-      o.x0 = r.x0 - sx; o.y0 = r.y0 - sy;
-      o.x1 = r.x1 - sx; o.y1 = r.y1 - sy;
-    }
-    clipRectCount = n;
-  }
-
-  function frame(t) {
-    raf = requestAnimationFrame(frame);
-    /* ⛔⛔ THE CAP, AND IT IS THE FIRST THING THAT HAPPENS. A skipped callback does no
-       clearRect, steps no node and links no pair — the whole body below is behind this
-       return, so the only cost of a frame the display offered and the cap refused is
-       this comparison. */
-    if (!frameDue(t)) return;
-    /* ⛔ the elapsed time since the last PAINTED frame, in old-60fps ticks: a slow
-       display moves the field at the same px/second as a fast one instead of at
-       (achieved fps / 60) of it. */
-    var k = stepScale(frameDt);
-    /* ⛔ NO CLIP IS ACTIVE YET — clearRect is itself clipped by the current clipping
-       region, so the canvas has to be cleared before the even-odd mask goes on. */
-    ctx.clearRect(0, 0, W, H);
-
-    /* ⛔ ONLY THE NODES THAT CAN BE SEEN ARE SIMULATED. `p.on` is last frame's answer and
-       carries a one-link-range margin, so every node that is drawn — or that could be
-       linked to one that is — is stepped exactly as it was; the great majority of the
-       field, parked off screen, is skipped. */
-    for (var i = 0; i < parts.length; i++) if (parts[i].on) step(parts[i], k);
-    computeViewport();
-
-    ctx.save();
-    if (docClipPath) {
-      /* ⛔ THE MASK, and it is built in DOCUMENT space on purpose: the path only has to
-         be rebuilt when a rectangle MOVES (the batched re-measure), not when the page
-         scrolls, because the translate below is what applies the scroll to it. clip()
-         bakes its region at call time, so translating back afterwards leaves the mask
-         where it belongs while the drawing that follows is in canvas space. */
-      ctx.translate(-sxNow(), -syNow());
-      ctx.clip(docClipPath, 'evenodd');
-      ctx.translate(sxNow(), syNow());
-    }
-    for (i = 0; i < vis.length; i++) draw(vis[i]);
-    connect();
-    ctx.restore();
-  }
-
-  /* ⛔⛔ THE DOCUMENT → CANVAS TRANSLATION, AND IT IS THE SAME PAIR `computeViewport()`
-     uses. This is what the even-odd clip mask is moved by: the path is built in DOCUMENT
-     space and the drawing that follows it is in CANVAS space, so the mask has to come off
-     by exactly the offset every node came off by — `scroll + origin`, on BOTH axes. The
-     horizontal half used to be the bare scroll because the box's left edge was the
-     frame's; it is now the rail's measured left edge as well, and a mask that missed it
-     would be a 90px-wide band of the wrong pixels punched out of every clip. */
-  function sxNow() { return (window.scrollX || 0) + originX; }
-  function syNow() { return (window.scrollY || 0) + originY; }
-
-  function stop() {
-    if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    /* ⛔ AND THE CLOCK GOES WITH IT. A resume is a fresh start, not a debt: without this
-       the first callback after a stop would measure its `dt` from a paint that may be
-       minutes old. `frameDue` treats -1 as "paint now, at 1×", so the field comes back
-       immediately and moving at exactly the speed it left at. */
-    lastT = -1;
-  }
-
-  /* ---------------------------------------------------------- lifecycle */
-  function start() {
-    /* ⛔ the single choke point every resume path goes through, so `bandEmpty` cannot be
-       forgotten by one of them: a frame the sentinel ladder has measured as off the
-       parent's screen never gets a loop. */
-    if (raf || reduce || bandEmpty) return;
-    lastT = -1;                     // ⛔ no catch-up on a resume — see stop()
-    raf = requestAnimationFrame(frame);
-  }
-
-  function paintOnce() {
-    /* the reduced-motion state: a real frame, held still */
-    ctx.clearRect(0, 0, W, H);
-    computeViewport();                 // ⛔ before any draw — `connect()` reads `vis`
-    ctx.save();
-    if (docClipPath) {
-      ctx.translate(-sxNow(), -syNow());
-      ctx.clip(docClipPath, 'evenodd');
-      ctx.translate(sxNow(), syNow());
-    }
-    for (var i = 0; i < vis.length; i++) draw(vis[i]);
-    connect();
-    ctx.restore();
-  }
-
-  function rebuild() {
-    /* ⛔ `true`: this is the path that runs when the layout has actually settled — the
-       first run, a debounced resize, a rotation, a web font landing — so the rail is
-       re-read here whatever the viewport width says. It is the one place a changed
-       scrollbar, a changed container or an edited `--seam-w` is picked up. */
-    measure(true);
-    if (bandEmpty) { stop(); return; }
-    refreshClipRects();      // ⛔ BEFORE seed() — a node must never be seeded in a clip
-    seed();
-    if (reduce) paintOnce();
-  }
-
-  /* ⛔⛔ THE CHEAP PATH THE BAND NEEDS, and the reason the band can follow a parent's
-     scroll at all. The band moves several times a second while the buyer scrolls;
-     a full rebuild (re-measure every clip box, re-seed ~1300 nodes) on each of those
-     would be a layout read and a heap of garbage per scroll frame of someone else's
-     page. This re-sizes and re-places the box, re-seeds only when the DOCUMENT itself
-     changed size, and repaints the reduced-motion still — the animated path is
-     repainted by its own loop, which reads the new `originY` on the very next frame. */
-  function reposition() {
-    if (measure()) { refreshClipRects(); seed(); }
-    if (bandEmpty) { stop(); return; }
-    if (reduce) paintOnce();
-    if (canvasOn && !document.hidden) start();
-  }
-
-  var rt = 0;
-  window.addEventListener('resize', function () {
-    if (rt) clearTimeout(rt);
-    rt = setTimeout(rebuild, 160);
-    /* the rectangles follow the layout immediately; the re-seed waits for the resize
-       to settle, so a drag-resize does not rebuild the whole field every frame */
-    scheduleRects();
-  });
-  window.addEventListener('orientationchange', scheduleRects);
-  window.addEventListener('scroll', scheduleRects, { passive: true });
-  var gViewportEl = document.getElementById('gViewport');
-  if (gViewportEl) gViewportEl.addEventListener('scroll', scheduleRects, { passive: true });
-  var catViewportEl = document.getElementById('catalogViewport');
-  if (catViewportEl) catViewportEl.addEventListener('scroll', scheduleRects, { passive: true });
-  /* ⛔ a ResizeObserver on the BODY, not a MutationObserver on the document: a body box
-     change is exactly "the layout got taller or shorter" (an accordion, a tab panel, a
-     carousel page, the web font landing), it is one observer for the whole page, and it
-     cannot re-trigger itself — the flush only reads layout and writes to a canvas. */
-  if (typeof window.ResizeObserver === 'function') {
-    try { new window.ResizeObserver(scheduleRects).observe(document.body); } catch (e) {}
-  }
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(function () { rebuild(); });
-  }
-
-  /* ⛔ a hidden tab must not keep animating — the original never pauses */
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { visible = false; stop(); }
-    else {
-      visible = true;
-      /* ⛔ the page may have been laid out while the tab was hidden, and the band may
-         have gone anywhere at all: it is RE-READ here rather than trusted. Callbacks
-         are not delivered to a hidden tab, so the value in hand is as old as the last
-         time this document was rendered. */
-      scheduleRects();          // the page may have been laid out while the tab was hidden
-      reposition();
-    }
-  });
-
-  /* the visible band — the sentinel ladder by default, a configured parent bridge where
-     one exists — is what the canvas box is moved to */
-  if (window.AFMP && window.AFMP.onBand) {
-    window.AFMP.onBand(function () { reposition(); });
-  }
-  /* ⛔ AND THE CANVAS'S OWN VISIBILITY, which is the other half of the question: the
-     band says WHERE the parent is looking, this says whether it can see this box at
-     all. A store page whose buyer has scrolled past the whole 16000px frame leaves
-     every sentinel empty — and this — with nothing, and the frame loop stops dead
-     instead of animating a field onto nobody's screen. */
-  if (window.AFMP && window.AFMP.watch) {
-    window.AFMP.watch(canvas, function (on) {
-      canvasOn = on;
-      if (!on) { stop(); return; }
-      if (!document.hidden && !bandEmpty) start();
-    }, false);
-  }
-
-  /* expose the batched re-measure so the page's own carousels can ask for one */
-  window.AFMP = window.AFMP || {};
-  window.AFMP.scheduleRects = scheduleRects;
-
-  /* the cursor is tracked on the window: the canvas itself is `pointer-events:none` */
-  window.addEventListener('mousemove', function (e) {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-  }, { passive: true });
-  window.addEventListener('mouseout', function (e) {
-    if (!e.relatedTarget) { mouse.x = null; mouse.y = null; }
-  });
-
-  rebuild();
-  if (!visible || bandEmpty) return;
-  start();
-})();
-</script>
+<!-- GhostFibers replaces the old particle field; the renderer is inlined at the end of the body. -->
 
 <!-- ⛔ REMOVED: the `#fxParticles` script. It built a <canvas> per card, seeded it on the
      10px dot grid, animated it with requestAnimationFrame, phase-locked its mask to the
@@ -12208,21 +10720,8 @@ html .support-card .support-link::before,html .support-card .support-link::after
 <!-- rails use a 3:5 close-up and sit as ordinary rounded cards.    -->
 <!-- ============================================================ -->
 <style id="pbFinalOverrides">
-.hero-cards > .hero-side { width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; aspect-ratio: auto !important; height: auto !important; align-self: center !important; border-radius: 18px !important; }
-.hero-cards > .hero-side:first-child, .hero-cards > .hero-side:last-child { margin-left: 0 !important; margin-right: 0 !important; border-radius: 18px !important; }
-.hero-cards > .hero-side video { width: 100% !important; height: auto !important; aspect-ratio: 3 / 5 !important; object-fit: cover !important; transform: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
+.hero-cards { grid-template-columns: minmax(0, 1fr) !important; max-width: 920px; margin-left: auto; margin-right: auto; }
 .hero-center { height: auto !important; }
-@media (max-width: 700px) {
-  .hero-cards { grid-template-columns: minmax(0, 1fr) !important; }
-  .hero-cards > .hero-side { display: none !important; }
-}
-@media (max-width: 1000px) {
-  #gallery .gallery-track { flex-wrap: wrap !important; }
-  #gallery .g-card { flex: 0 0 calc((100% - 2 * var(--strip-gap) - 1px) / 3) !important; }
-}
-@media (max-width: 640px) {
-  #gallery .g-card { flex: 0 0 calc((100% - var(--strip-gap) - 1px) / 2) !important; }
-}
 @media (max-width: 760px) {
   .feature-row.side-row,
   .feature-row.side-row.rev { flex-direction: column !important; }
@@ -12231,6 +10730,1165 @@ html .support-card .support-link::before,html .support-card .support-link::after
   .feature-row.side-row .feature-text { order: 1 !important; }
   .feature-row.side-row .feature-media { order: 2 !important; }
 }
+/* A little smaller: the numbered included list. */
+#included li { font-size: .88rem !important; }
+#included li::before { width: 23px !important; height: 23px !important; border-radius: 8px !important; font-size: .8rem !important; }
+/* A little larger: the Tap or hold copy. */
+.feature-row.side-row.pb-tap-row .feature-title { font-size: clamp(1.15rem, 2.1vw, 1.5rem) !important; }
+.feature-row.side-row.pb-tap-row .feature-copy { font-size: clamp(.95rem, 1.35vw, 1.1rem) !important; }
 </style>
+<script id="pbLazyClips">
+/* Below-fold videos: hand the src back as the clip approaches the viewport.
+   The page's own gate does this too; this is a small, independent fallback so a
+   slow or unusual scroll can never leave a poster sitting there forever. */
+(function () {
+  'use strict';
+  function restoreClips() {
+    var els = document.querySelectorAll('video[data-afmp-src]');
+    var vh = window.innerHeight || 0;
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var r = el.getBoundingClientRect();
+      if (r.bottom < -1200 || r.top > vh + 1200) continue;
+      var src = el.getAttribute('data-afmp-src');
+      if (!src) continue;
+      el.removeAttribute('data-afmp-src');
+      el.setAttribute('src', src);
+      if (el.hasAttribute('data-autoplay')) {
+        el.muted = true;
+        var p = el.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+    }
+  }
+  var timer = 0;
+  function later() {
+    if (timer) return;
+    timer = setTimeout(function () { timer = 0; restoreClips(); }, 120);
+  }
+  window.addEventListener('scroll', later, { passive: true });
+  window.addEventListener('resize', later);
+  window.addEventListener('load', later);
+  setTimeout(restoreClips, 500);
+  restoreClips();
+})();
+</script><script id="ghostFibersModule">
+(function () {
+'use strict';
+
+const MAX_RENDER_DIM = 2400;
+const BLOOM_LEVELS = 5;
+const INTRO_SECONDS = 2.6;
+const CAMERA = 7.5;
+const FOV = 0.56;
+const RIBBON_LENGTH = 24;
+const HOVER_EFFECTS = { focus: 0, part: 1, none: 2 };
+const FIBER_STYLES = { dots: 0, dashes: 0.45, lines: 1 };
+const GRADIENTS = { depth: 0, along: 1, across: 2 };
+const RIBBON_TINT = [0, 0.75, 0.35];
+const PLACEMENTS = [
+  [0, 0, 0, 0],
+  [1.9, -4.6, -0.08, 2.4],
+  [-1.05, 2.0, 0.12, 4.1]
+];
+const RIBBON_GAIN = [1, 0.5, 0.55];
+const DEG = Math.PI / 180;
+const FOCAL = 1 / (2 * Math.tan(FOV / 2));
+
+const HEADER = `#version 300 es
+precision highp float;
+`;
+
+const SHAPE = `
+uniform float uTime;
+uniform float uTwist;
+uniform float uRoll;
+uniform float uWaves;
+uniform float uWidth;
+uniform float uRibbon;
+uniform mat3 uOrient;
+uniform float uScale;
+uniform vec4 uPlace;
+uniform float uVolume;
+
+float hash11(float n) {
+  return fract(sin(n * 91.3458) * 47453.5453);
+}
+
+vec3 centerLocal(float s) {
+  float t = uTime;
+  float ph = uPlace.w;
+  float x = s * ${RIBBON_LENGTH.toFixed(1)};
+  float y = uWaves * (0.52 * sin(x * 0.43 + t * 0.31 + ph) + 0.26 * sin(x * 0.79 - t * 0.23 + 1.3 + ph * 0.7)) + uPlace.x + x * uPlace.z;
+  float z = uWaves * 0.65 * sin(x * 0.33 + t * 0.19 + 0.7 + ph * 1.3) + uPlace.y;
+  return vec3(x, y, z);
+}
+
+float twistAt(float s, float layer) {
+  float x = s * ${RIBBON_LENGTH.toFixed(1)};
+  return uTwist * 0.483 * x + uRoll + uPlace.w * 0.6 + layer * uVolume * 0.42 + 0.5 * sin(x * 0.26 + uTime * 0.27 + uPlace.w);
+}
+
+vec3 ribbonPoint(float s, float v, float n, float layer, out vec3 normal) {
+  vec3 c0 = centerLocal(s);
+  vec3 c1 = centerLocal(s + 0.004);
+  vec3 tangent = normalize(c1 - c0);
+  vec3 up = vec3(0.0, 1.0, 0.0);
+  vec3 n0 = normalize(up - tangent * dot(up, tangent));
+  vec3 b0 = cross(tangent, n0);
+  float th = twistAt(s, layer);
+  vec3 across = cos(th) * n0 + sin(th) * b0;
+  vec3 sheet = -sin(th) * n0 + cos(th) * b0;
+  float halfWidth = uWidth * (0.78 + 0.22 * cos(s * 3.14159));
+  vec3 local = c0 + across * v * halfWidth + sheet * (n + layer * uVolume * 0.16) * halfWidth;
+  normal = uOrient * sheet;
+  return uOrient * (local * uScale);
+}
+`;
+
+const DOT_VERTEX = `${HEADER}
+${SHAPE}
+uniform mat4 uViewProj;
+uniform vec3 uEye;
+uniform vec2 uViewport;
+uniform float uDpr;
+uniform float uFibers;
+uniform float uDots;
+uniform float uFlow;
+uniform float uSize;
+uniform float uFocus;
+uniform float uDof;
+uniform float uMaxCoc;
+uniform float uFocal;
+uniform float uIntro;
+uniform vec4 uPulse;
+uniform vec4 uHover;
+uniform float uPart;
+uniform float uDotLength;
+uniform float uSparkle;
+uniform float uDepthSpread;
+uniform float uGain;
+uniform float uTips;
+uniform float uTint;
+uniform float uGradient;
+uniform float uFold;
+
+out vec2 vLocal;
+out float vRadius;
+out float vSegment;
+out vec3 vLight;
+out float vTint;
+
+vec3 project(vec3 world, out float depth) {
+  vec4 clip = uViewProj * vec4(world, 1.0);
+  depth = clip.w;
+  vec2 ndc = clip.xy / clip.w;
+  return vec3((ndc * 0.5 + 0.5) * uViewport, clip.w);
+}
+
+vec2 part(vec2 px) {
+  if (uPart <= 0.0 || uHover.w <= 0.0) return px;
+  vec2 away = px - uHover.xy;
+  float dist = length(away);
+  float radius = uHover.z;
+  float push = uPart * uHover.w * radius * 0.55 * exp(-dist * dist / (radius * radius));
+  return px + away / max(dist, 1e-3) * push * smoothstep(0.0, radius * 0.25, dist);
+}
+
+void main() {
+  int perFiber = int(uDots);
+  int fiber = gl_InstanceID / perFiber;
+  int bead = gl_InstanceID - fiber * perFiber;
+  float fi = float(fiber);
+  float fk = float(bead);
+
+  float seed = hash11(fi * 1.731 + uRibbon * 17.0);
+  float s = fract((fk + uFlow + seed * uDots) / uDots) - 0.5;
+  float sNext = s + 1.0 / uDots;
+  float layer = mod(fi, 3.0) - 1.0;
+  float slot = floor(fi / 3.0);
+  float perLayer = max(floor(uFibers / 3.0), 1.0);
+  float v = ((slot + 0.5) / perLayer) * 2.0 - 1.0 + (hash11(fi * 3.113 + 4.0) - 0.5) * (1.6 / perLayer) + layer * 0.12 / perLayer;
+  float depthOffset = (hash11(fi * 7.919 + 2.0) - 0.5) * uDepthSpread * (0.35 + 6.0 * s * s);
+
+  vec3 normal;
+  vec3 world = ribbonPoint(s, v, depthOffset, layer, normal);
+  vec3 nextNormal;
+  vec3 nextWorld = ribbonPoint(sNext, v, depthOffset, layer, nextNormal);
+
+  float depth;
+  vec3 p0 = project(world, depth);
+  float nextDepth;
+  vec3 p1 = project(nextWorld, nextDepth);
+  vec2 px = part(p0.xy);
+  vec2 pxNext = part(p1.xy);
+
+  float baseRadius = max(0.5 * uSize * uDpr * uFocal / max(depth, 0.1), 0.45);
+  float coc = min(uDof * abs(1.0 - uFocus / max(depth, 0.1)) * uViewport.y * 0.035, uMaxCoc * uDpr);
+  float radius = baseRadius + coc;
+  float spill = max(10.0 * uDpr, baseRadius);
+  float energy = pow(baseRadius / min(radius, spill), 1.25) * pow(min(1.0, spill / radius), 2.0);
+
+  vec3 toEye = normalize(uEye - world);
+  float facing = abs(dot(normalize(normal), toEye));
+  float focalPx = uViewport.y * ${FOCAL.toFixed(5)} / max(depth, 0.1);
+  float widthPx = 2.0 * uWidth * uScale * focalPx;
+  float stack = (widthPx * facing + 2.0 * baseRadius) / (widthPx + 2.0 * baseRadius);
+  float spacingFace = length(nextWorld - world) * focalPx;
+  float trail = (length(p1.xy - p0.xy) + 2.0 * baseRadius) / (spacingFace + 2.0 * baseRadius);
+  float crowd = sqrt(clamp(stack * trail, 0.002, 1.0));
+  float fold = pow(1.0 - facing, 6.0) * uFold;
+  float endFade = smoothstep(0.5, 0.4, abs(s)) * smoothstep(1.6, 4.2, depth);
+  float tipEnd = mix(0.6, 0.06 + 0.26 * hash11(fi * 9.137 + uPlace.w * 3.0), uTips);
+  float tip = exp(-pow((s - tipEnd) / 0.0065, 2.0)) * uTips;
+  endFade *= smoothstep(tipEnd + 0.003, tipEnd - 0.001, s);
+  float appear = smoothstep(0.0, 0.12, uIntro * 1.3 - (s + 0.5) - seed * 0.12);
+  float twinklePhase = hash11(fi * 13.7 + fk * 0.917 + uRibbon * 3.0);
+  float twinkle = pow(max(sin(uTime * (1.2 + 2.6 * twinklePhase) * 3.0 + twinklePhase * 61.0), 0.0), 36.0) * uSparkle * (1.0 - 0.85 * uDotLength);
+  float pulseGap = abs(s - uPulse.x) - uPulse.y * 0.42;
+  float pulse = uPulse.z * exp(-pulseGap * pulseGap / 0.0018) * (abs(uPulse.w - uRibbon) < 0.5 ? 1.0 : 0.35);
+  float strength = mix(0.45, 1.0, hash11(fi * 5.37 + 1.0)) * mix(1.0, 0.72, abs(layer) * uVolume);
+  float intensity = energy * crowd * strength * endFade * appear * 0.8 * uGain * (1.0 + fold * 7.0 + twinkle * 5.0 + pulse * 4.0 + tip * 7.0);
+  float highlight = clamp(fold * 0.55 + twinkle + pulse + tip, 0.0, 1.0);
+
+  vec2 segment = (pxNext - px) * uDotLength;
+  float segmentLength = length(segment);
+  intensity *= mix(1.0, (2.0 * radius) / (segmentLength + 2.0 * radius) * 1.6, uDotLength);
+  vec2 axis = segmentLength > 1e-3 ? segment / segmentLength : vec2(1.0, 0.0);
+  vec2 perp = vec2(-axis.y, axis.x);
+  vec2 corner = vec2(gl_VertexID == 1 || gl_VertexID == 3 ? 1.0 : 0.0, gl_VertexID >= 2 ? 1.0 : 0.0);
+  float along = mix(-radius, segmentLength + radius, corner.x);
+  float across = mix(-radius, radius, corner.y);
+  vec2 position = px + axis * along + perp * across;
+
+  vLocal = vec2(along, across);
+  vRadius = radius;
+  vSegment = segmentLength;
+  vLight = vec3(intensity, highlight, coc / max(radius, 1e-3));
+  float depthTint = clamp(uTint + smoothstep(uFocus, uFocus + 5.0, depth) * 0.5, 0.0, 1.0);
+  vTint = uGradient < 0.5 ? depthTint : uGradient < 1.5 ? smoothstep(-0.42, 0.42, s) : clamp(v * 0.5 + 0.5, 0.0, 1.0);
+  if (intensity < 0.0005) position = vec2(-1e4);
+  gl_Position = vec4(position / uViewport * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+const DUST_VERTEX = `${HEADER}
+uniform mat4 uViewProj;
+uniform vec2 uViewport;
+uniform float uDpr;
+uniform float uTime;
+uniform float uSize;
+uniform float uFocus;
+uniform float uDof;
+uniform float uMaxCoc;
+uniform float uFocal;
+uniform float uIntro;
+uniform float uSparkle;
+uniform float uScale;
+uniform float uGradient;
+uniform float uGain;
+
+out vec2 vLocal;
+out float vRadius;
+out float vSegment;
+out vec3 vLight;
+out float vTint;
+
+float hash11(float n) {
+  return fract(sin(n * 91.3458) * 47453.5453);
+}
+
+void main() {
+  float id = float(gl_InstanceID);
+  vec3 seed = vec3(hash11(id * 1.37 + 0.3), hash11(id * 2.91 + 1.7), hash11(id * 4.17 + 2.9));
+  vec3 box = vec3(9.0, 5.4, 6.0);
+  vec3 p = (seed - 0.5) * box;
+  p.z -= 0.6;
+  p += 0.18 * vec3(sin(uTime * 0.21 + seed.x * 40.0), sin(uTime * 0.17 + seed.y * 40.0), sin(uTime * 0.13 + seed.z * 40.0));
+  p *= mix(1.0, uScale, 0.5);
+  vec4 clip = uViewProj * vec4(p, 1.0);
+  float depth = clip.w;
+  vec2 px = (clip.xy / clip.w * 0.5 + 0.5) * uViewport;
+  float size = uSize * mix(0.5, 1.4, hash11(id * 7.7));
+  float baseRadius = max(0.5 * size * uDpr * uFocal / max(depth, 0.1), 0.45);
+  float coc = min(uDof * abs(1.0 - uFocus / max(depth, 0.1)) * uViewport.y * 0.035, uMaxCoc * uDpr * 1.6);
+  float radius = baseRadius + coc;
+  float spill = max(10.0 * uDpr, baseRadius);
+  float energy = pow(baseRadius / min(radius, spill), 0.9) * pow(min(1.0, spill / radius), 2.0);
+  float twinkle = pow(max(sin(uTime * (0.8 + 1.6 * seed.y) * 2.0 + seed.z * 50.0), 0.0), 8.0);
+  float intensity = energy * (0.35 + 0.65 * twinkle) * mix(0.4, 1.0, seed.x) * smoothstep(0.3, 1.0, uIntro) * (depth > 0.2 ? 1.0 : 0.0);
+  vec2 corner = vec2(gl_VertexID == 1 || gl_VertexID == 3 ? 1.0 : 0.0, gl_VertexID >= 2 ? 1.0 : 0.0) * 2.0 - 1.0;
+  vec2 position = px + corner * radius;
+  vLocal = corner * radius;
+  vRadius = radius;
+  vSegment = 0.0;
+  vLight = vec3(intensity * 0.8 * uGain, 0.3 + 0.6 * twinkle * uSparkle, coc / max(radius, 1e-3));
+  vTint = uGradient < 0.5 ? 0.45 + 0.55 * seed.y : seed.y;
+  gl_Position = vec4(position / uViewport * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+const DOT_FRAGMENT = `${HEADER}
+uniform vec3 uGlowColor;
+uniform vec3 uLineColor;
+uniform vec3 uSecondaryColor;
+in vec2 vLocal;
+in float vRadius;
+in float vSegment;
+in vec3 vLight;
+in float vTint;
+out vec4 outColor;
+void main() {
+  float along = clamp(vLocal.x, 0.0, vSegment);
+  float d = length(vec2(vLocal.x - along, vLocal.y));
+  float rho = d / max(vRadius, 1e-3);
+  if (rho > 1.0) discard;
+  float soft = clamp(2.6 / max(vRadius, 1e-3), 0.14, 1.0);
+  float disk = 1.0 - smoothstep(1.0 - soft, 1.0, rho);
+  float bokeh = disk * (0.94 + 0.08 * smoothstep(0.55, 0.95, rho));
+  float core = exp(-rho * rho * 3.2);
+  float shape = mix(core, bokeh, smoothstep(0.25, 0.7, vLight.z));
+  vec3 color = mix(mix(uGlowColor, uSecondaryColor, vTint), uLineColor, vLight.y);
+  outColor = vec4(color * shape * vLight.x, shape * vLight.x);
+}`;
+
+const FULLSCREEN = `${HEADER}
+out vec2 vUv;
+void main() {
+  vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0);
+  vUv = p * 0.5 + 0.5;
+  gl_Position = vec4(p, 0.0, 1.0);
+}`;
+
+const BRIGHT_FRAGMENT = `${HEADER}
+uniform sampler2D uSource;
+uniform vec2 uTexel;
+in vec2 vUv;
+out vec4 outColor;
+vec3 pick(vec2 uv) {
+  vec3 c = texture(uSource, uv).rgb;
+  float peak = max(max(c.r, c.g), c.b);
+  return c * smoothstep(0.35, 1.2, peak);
+}
+void main() {
+  vec2 o = uTexel;
+  vec3 c = pick(vUv + vec2(-o.x, -o.y)) + pick(vUv + vec2(o.x, -o.y)) + pick(vUv + vec2(-o.x, o.y)) + pick(vUv + vec2(o.x, o.y));
+  outColor = vec4(c * 0.25, 1.0);
+}`;
+
+const DOWN_FRAGMENT = `${HEADER}
+uniform sampler2D uSource;
+uniform vec2 uTexel;
+in vec2 vUv;
+out vec4 outColor;
+void main() {
+  vec2 o = uTexel;
+  vec3 c = texture(uSource, vUv).rgb * 4.0;
+  c += texture(uSource, vUv + vec2(-o.x, -o.y)).rgb;
+  c += texture(uSource, vUv + vec2(o.x, -o.y)).rgb;
+  c += texture(uSource, vUv + vec2(-o.x, o.y)).rgb;
+  c += texture(uSource, vUv + vec2(o.x, o.y)).rgb;
+  outColor = vec4(c / 8.0, 1.0);
+}`;
+
+const UP_FRAGMENT = `${HEADER}
+uniform sampler2D uSource;
+uniform vec2 uTexel;
+in vec2 vUv;
+out vec4 outColor;
+void main() {
+  vec2 o = uTexel;
+  vec3 c = texture(uSource, vUv + vec2(-o.x * 2.0, 0.0)).rgb;
+  c += texture(uSource, vUv + vec2(-o.x, o.y)).rgb * 2.0;
+  c += texture(uSource, vUv + vec2(0.0, o.y * 2.0)).rgb;
+  c += texture(uSource, vUv + vec2(o.x, o.y)).rgb * 2.0;
+  c += texture(uSource, vUv + vec2(o.x * 2.0, 0.0)).rgb;
+  c += texture(uSource, vUv + vec2(o.x, -o.y)).rgb * 2.0;
+  c += texture(uSource, vUv + vec2(0.0, -o.y * 2.0)).rgb;
+  c += texture(uSource, vUv + vec2(-o.x, -o.y)).rgb * 2.0;
+  outColor = vec4(c / 12.0, 1.0);
+}`;
+
+const COMPOSITE_FRAGMENT = `${HEADER}
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+uniform float uGlow;
+uniform float uBrightness;
+uniform float uLightMode;
+uniform float uGrain;
+uniform float uVignette;
+uniform float uFrame;
+uniform vec2 uView;
+uniform float uDpr;
+in vec2 vUv;
+out vec4 outColor;
+
+float hash(vec2 p) {
+  vec3 q = fract(vec3(p.xyx) * 0.1031);
+  q += dot(q, q.yzx + 33.33);
+  return fract((q.x + q.y) * q.z);
+}
+
+float smoother(float x) {
+  x = clamp(x, 0.0, 1.0);
+  return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+}
+
+void main() {
+  vec4 scene = texture(uScene, vUv);
+  vec3 bloom = texture(uBloom, vUv).rgb;
+  vec3 light = (scene.rgb + bloom * uGlow) * uBrightness;
+  float reach = max(uVignette * 0.3, 1e-4);
+  float mask = uVignette > 0.0 ? smoother(vUv.x / reach) * smoother((1.0 - vUv.x) / reach) * smoother(vUv.y / reach) * smoother((1.0 - vUv.y) / reach) : 1.0;
+  vec2 cell = floor(vUv * uView / max(uDpr, 1.0));
+  float grain = hash(cell + uFrame * 17.31) + hash(cell * 1.31 + uFrame * 3.7 + 9.1) - 1.0;
+  if (uLightMode > 0.5) {
+    float amount = scene.a * uBrightness;
+    float ink = (1.0 - exp(-amount * 1.5)) * mask;
+    ink = clamp(ink * (1.0 + grain * uGrain * 2.0), 0.0, 1.0);
+    vec3 hue = clamp(scene.rgb / max(scene.a, 1e-4), 0.0, 1.0);
+    vec3 tone = hue * mix(1.0, 0.72, clamp(amount * 0.35, 0.0, 1.0));
+    outColor = vec4(tone * ink, ink);
+    return;
+  }
+  vec3 color = (1.0 - exp(-light * 1.25)) * mask;
+  float peak = max(color.r, max(color.g, color.b));
+  color = max(color + grain * uGrain * (0.25 + 0.75 * sqrt(peak)), 0.0);
+  outColor = vec4(color, max(color.r, max(color.g, color.b)));
+}`;
+
+const SHAPE_UNIFORMS = [
+  'uTime',
+  'uTwist',
+  'uRoll',
+  'uWaves',
+  'uWidth',
+  'uRibbon',
+  'uOrient',
+  'uScale',
+  'uPlace',
+  'uVolume'
+];
+const DOT_UNIFORMS = [
+  ...SHAPE_UNIFORMS,
+  'uViewProj',
+  'uEye',
+  'uViewport',
+  'uDpr',
+  'uFibers',
+  'uDots',
+  'uFlow',
+  'uSize',
+  'uFocus',
+  'uDof',
+  'uMaxCoc',
+  'uFocal',
+  'uIntro',
+  'uPulse',
+  'uHover',
+  'uPart',
+  'uDotLength',
+  'uSparkle',
+  'uDepthSpread',
+  'uGain',
+  'uTips',
+  'uTint',
+  'uGradient',
+  'uFold',
+  'uGlowColor',
+  'uLineColor',
+  'uSecondaryColor'
+];
+const DUST_UNIFORMS = [
+  'uViewProj',
+  'uViewport',
+  'uDpr',
+  'uTime',
+  'uSize',
+  'uFocus',
+  'uDof',
+  'uMaxCoc',
+  'uFocal',
+  'uIntro',
+  'uSparkle',
+  'uScale',
+  'uGradient',
+  'uGain',
+  'uGlowColor',
+  'uLineColor',
+  'uSecondaryColor'
+];
+const PASS_UNIFORMS = ['uSource', 'uTexel'];
+const COMPOSITE_UNIFORMS = [
+  'uScene',
+  'uBloom',
+  'uGlow',
+  'uBrightness',
+  'uLightMode',
+  'uGrain',
+  'uVignette',
+  'uFrame',
+  'uView',
+  'uDpr'
+];
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const compile = (gl, type, source) => {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader;
+  gl.deleteShader(shader);
+  return null;
+};
+
+const link = (gl, vertexSource, fragmentSource, names) => {
+  const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource);
+  const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentSource);
+  const program = gl.createProgram();
+  if (!vertex || !fragment || !program) return null;
+  gl.attachShader(program, vertex);
+  gl.attachShader(program, fragment);
+  gl.linkProgram(program);
+  gl.deleteShader(vertex);
+  gl.deleteShader(fragment);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    gl.deleteProgram(program);
+    return null;
+  }
+  const uniforms = {};
+  for (const name of names) uniforms[name] = gl.getUniformLocation(program, name);
+  return { program, uniforms };
+};
+
+const frustum = (fov, aspect, near, far) => {
+  const f = 1 / Math.tan(fov / 2);
+  const nf = 1 / (near - far);
+  return [f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0];
+};
+
+const multiply = (a, b) => {
+  const out = new Array(16);
+  for (let col = 0; col < 4; col += 1) {
+    for (let row = 0; row < 4; row += 1) {
+      out[col * 4 + row] =
+        a[row] * b[col * 4] + a[4 + row] * b[col * 4 + 1] + a[8 + row] * b[col * 4 + 2] + a[12 + row] * b[col * 4 + 3];
+    }
+  }
+  return out;
+};
+
+const orientation = (yaw, pitch, roll) => {
+  const cy = Math.cos(yaw);
+  const sy = Math.sin(yaw);
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const cr = Math.cos(roll);
+  const sr = Math.sin(roll);
+  const ry = [cy, 0, -sy, 0, 1, 0, sy, 0, cy];
+  const rx = [1, 0, 0, 0, cp, sp, 0, -sp, cp];
+  const rz = [cr, sr, 0, -sr, cr, 0, 0, 0, 1];
+  const mul = (a, b) => {
+    const out = new Array(9);
+    for (let col = 0; col < 3; col += 1) {
+      for (let row = 0; row < 3; row += 1) {
+        out[col * 3 + row] = a[row] * b[col * 3] + a[3 + row] * b[col * 3 + 1] + a[6 + row] * b[col * 3 + 2];
+      }
+    }
+    return out;
+  };
+  return mul(rz, mul(rx, ry));
+};
+
+const applyMat3 = (m, v) => [
+  m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
+  m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
+  m[2] * v[0] + m[5] * v[1] + m[8] * v[2]
+];
+
+function createGhostFibers(container, canvas, {
+  glowColor = '#8b5cf6',
+  lineColor,
+  secondaryColor,
+  gradient = 'depth',
+  speed = 0.5,
+  scale = 1,
+  rotation = 18,
+  rollSpeed = 0.15,
+  layers = 3,
+  waves = 1,
+  twist = 1.2,
+  threads = 72,
+  volume = 0.7,
+  spread = 1,
+  density = 1,
+  thickness = 1,
+  flow = 0.4,
+  fiberStyle = 'dots',
+  tips = 0,
+  foldGlow = 1,
+  perspective = 0.65,
+  depthOfField = 0.85,
+  focusDepth = 0,
+  particles = 0.5,
+  sparkle = 0.5,
+  glow = 0.8,
+  brightness = 1,
+  vignette = 0.3,
+  grain = 0.06,
+  mouseInteraction = true,
+  hoverEffect = 'focus',
+  mouseStrength = 1,
+  pulseOnClick = true,
+  intro = true,
+  lightMode = false,
+  paused = false,
+  dpr,
+  ...rest
+}) {
+  const wakeRef = { current: null };
+  const settings = {
+    glowColor: String(glowColor),
+    lineColor: lineColor ? String(lineColor) : '',
+    secondaryColor: secondaryColor ? String(secondaryColor) : '',
+    gradient: GRADIENTS[gradient] ?? 0,
+    speed: Math.max(0, speed),
+    scale: clamp(scale, 0.3, 3),
+    rotation: rotation * DEG,
+    rollSpeed,
+    layers: clamp(Math.round(layers), 1, 3),
+    waves: Math.max(0, waves),
+    twist: Math.max(0, twist),
+    threads: clamp(Math.round(threads), 6, 180),
+    volume: clamp(volume, 0, 2),
+    spread: clamp(spread, 0.2, 3),
+    density: clamp(density, 0.2, 3),
+    thickness: clamp(thickness, 0.2, 4),
+    flow,
+    dotLength: FIBER_STYLES[fiberStyle] ?? 0,
+    tips: clamp(tips, 0, 1),
+    foldGlow: clamp(foldGlow, 0, 3),
+    perspective: clamp(perspective, 0, 1),
+    depthOfField: clamp(depthOfField, 0, 2),
+    focusDepth: clamp(focusDepth, -1, 1),
+    particles: clamp(particles, 0, 2),
+    sparkle: clamp(sparkle, 0, 2),
+    glow: Math.max(0, glow),
+    brightness: Math.max(0, brightness),
+    vignette: clamp(vignette, 0, 1),
+    grain: Math.max(0, grain),
+    mouseInteraction,
+    hover: HOVER_EFFECTS[hoverEffect] ?? 0,
+    mouseStrength: Math.max(0, mouseStrength),
+    pulseOnClick,
+    intro,
+    lightMode,
+    paused,
+    dpr
+  };
+  const settingsRef = { current: settings };
+  settingsRef.current = settings;
+
+  const cleanup = (() => {
+    const gl = canvas.getContext('webgl2', {
+      alpha: true,
+      premultipliedAlpha: true,
+      antialias: false,
+      depth: false,
+      stencil: false
+    });
+    if (!container || !canvas || !gl) return undefined;
+
+    const floatTargets = !!gl.getExtension('EXT_color_buffer_float');
+    const dots = link(gl, DOT_VERTEX, DOT_FRAGMENT, DOT_UNIFORMS);
+    const dust = link(gl, DUST_VERTEX, DOT_FRAGMENT, DUST_UNIFORMS);
+    const bright = link(gl, FULLSCREEN, BRIGHT_FRAGMENT, PASS_UNIFORMS);
+    const down = link(gl, FULLSCREEN, DOWN_FRAGMENT, PASS_UNIFORMS);
+    const up = link(gl, FULLSCREEN, UP_FRAGMENT, PASS_UNIFORMS);
+    const composite = link(gl, FULLSCREEN, COMPOSITE_FRAGMENT, COMPOSITE_UNIFORMS);
+    if (!dots || !dust || !bright || !down || !up || !composite) return undefined;
+
+    const format = floatTargets ? gl.RGBA16F : gl.RGBA8;
+    const makeTarget = () => ({ texture: null, framebuffer: gl.createFramebuffer(), width: 0, height: 0 });
+    const allocate = (target, width, height) => {
+      if (target.texture && target.width === width && target.height === height) return;
+      if (target.texture) gl.deleteTexture(target.texture);
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texStorage2D(gl.TEXTURE_2D, 1, format, width, height);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      target.texture = texture;
+      target.width = width;
+      target.height = height;
+    };
+    const scene = makeTarget();
+    const chain = Array.from({ length: BLOOM_LEVELS }, makeTarget);
+    const vao = gl.createVertexArray();
+
+    const probe = document.createElement('canvas');
+    probe.width = 1;
+    probe.height = 1;
+    const probeContext = probe.getContext('2d', { willReadFrequently: true });
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const state = {
+      time: 0,
+      roll: 0,
+      flow: 0,
+      frame: 0,
+      intro: settingsRef.current.intro && !reduce ? 0 : INTRO_SECONDS,
+      width: 1,
+      height: 1,
+      fit: 1,
+      colorKey: '',
+      glow: [0.55, 0.36, 0.96],
+      line: [1, 0.85, 0.98],
+      secondary: [0.44, 0.29, 0.77],
+      pointer: { x: 0, y: 0, inside: false },
+      hover: { x: 0, y: 0, presence: 0, placed: false },
+      look: { x: 0, y: 0, vx: 0, vy: 0 },
+      focus: CAMERA + settingsRef.current.focusDepth * 3,
+      pulse: { s: 0, age: 9, strength: 0, ribbon: 0 },
+      camera: null
+    };
+    let raf = 0;
+    let last = 0;
+    let visible = true;
+    let alive = true;
+
+    const toRgb = (value, fallback) => {
+      if (!probeContext || !value) return fallback;
+      const css = /^[0-9a-f]{3,8}$/i.test(value) ? `#${value}` : value;
+      probeContext.clearRect(0, 0, 1, 1);
+      probeContext.fillStyle = '#000000';
+      probeContext.fillStyle = css;
+      probeContext.fillRect(0, 0, 1, 1);
+      const [r, g, b] = probeContext.getImageData(0, 0, 1, 1).data;
+      return [r / 255, g / 255, b / 255];
+    };
+
+    const resolveColors = s => {
+      const key = `${s.glowColor}|${s.lineColor}|${s.secondaryColor}|${s.lightMode}`;
+      if (key === state.colorKey) return;
+      state.colorKey = key;
+      state.glow = toRgb(s.glowColor, [0.55, 0.36, 0.96]);
+      state.secondary = s.secondaryColor ? toRgb(s.secondaryColor, state.glow) : state.glow.map(c => c * 0.8);
+      if (s.lineColor) state.line = toRgb(s.lineColor, state.glow);
+      else state.line = s.lightMode ? state.glow : state.glow.map(c => c + (1 - c) * 0.72);
+    };
+
+    const centerLocal = (s, t, ribbon, waves) => {
+      const place = PLACEMENTS[ribbon];
+      const ph = place[3];
+      const x = s * RIBBON_LENGTH;
+      const y =
+        waves * (0.52 * Math.sin(x * 0.43 + t * 0.31 + ph) + 0.26 * Math.sin(x * 0.79 - t * 0.23 + 1.3 + ph * 0.7)) +
+        place[0] +
+        x * place[2];
+      const z = waves * 0.65 * Math.sin(x * 0.33 + t * 0.19 + 0.7 + ph * 1.3) + place[1];
+      return [x, y, z];
+    };
+
+    const cameraFor = s => {
+      const aspect = state.width / Math.max(state.height, 1);
+      const eye = [0, 0, CAMERA];
+      const projection = frustum(FOV, aspect, 0.1, 60);
+      const view = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -eye[0], -eye[1], -eye[2], 1];
+      const orient = orientation(s.perspective * 0.85 + state.look.x * 0.22, 0.12 - state.look.y * 0.14, s.rotation);
+      return { eye, viewProj: multiply(projection, view), orient };
+    };
+
+    const screenOf = (camera, world) => {
+      const m = camera.viewProj;
+      const x = m[0] * world[0] + m[4] * world[1] + m[8] * world[2] + m[12];
+      const y = m[1] * world[0] + m[5] * world[1] + m[9] * world[2] + m[13];
+      const w = m[3] * world[0] + m[7] * world[1] + m[11] * world[2] + m[15];
+      return { x: ((x / w) * 0.5 + 0.5) * state.width, y: (0.5 - (y / w) * 0.5) * state.height, depth: w };
+    };
+
+    const nearestOnRibbon = (s, px, py) => {
+      const camera = state.camera;
+      if (!camera) return null;
+      let best = null;
+      for (let ribbon = 0; ribbon < s.layers; ribbon += 1) {
+        for (let i = 0; i <= 96; i += 1) {
+          const u = i / 96 - 0.5;
+          const local = centerLocal(u, state.time, ribbon, s.waves).map(c => c * s.scale * state.fit);
+          const world = applyMat3(camera.orient, local);
+          const screen = screenOf(camera, world);
+          const gap = Math.hypot(screen.x - px, screen.y - py);
+          if (!best || gap < best.gap) best = { gap, s: u, ribbon, depth: screen.depth };
+        }
+      }
+      return best;
+    };
+
+    const resize = () => {
+      const s = settingsRef.current;
+      const width = Math.max(1, container.clientWidth);
+      const height = Math.max(1, container.clientHeight);
+      const baseDpr = Math.min(s.dpr || window.devicePixelRatio || 1, 2);
+      const longest = Math.max(width, height) * baseDpr;
+      const ratio = longest > MAX_RENDER_DIM ? (baseDpr * MAX_RENDER_DIM) / longest : baseDpr;
+      const pixelWidth = Math.max(1, Math.round(width * ratio));
+      const pixelHeight = Math.max(1, Math.round(height * ratio));
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+      }
+      state.width = width;
+      state.height = height;
+      state.fit = clamp(width / height / 1.5, 0.6, 1);
+      render();
+    };
+
+    const drawPass = (program, target, source, texel) => {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+      gl.viewport(0, 0, target.width, target.height);
+      gl.useProgram(program.program);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, source.texture);
+      gl.uniform1i(program.uniforms.uSource, 0);
+      gl.uniform2f(program.uniforms.uTexel, texel[0], texel[1]);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+
+    const render = () => {
+      const s = settingsRef.current;
+      resolveColors(s);
+      const camera = cameraFor(s);
+      state.camera = camera;
+      const ratio = canvas.height / Math.max(state.height, 1);
+      const intro = s.paused || reduce ? 1 : clamp(state.intro / INTRO_SECONDS, 0, 1);
+      const introEase = 1 - (1 - intro) * (1 - intro) * (1 - intro);
+
+      allocate(scene, canvas.width, canvas.height);
+      gl.bindVertexArray(vao);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, scene.framebuffer);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE);
+
+      const dotsPerFiber = Math.round(260 * s.density);
+      const blurCap = 22 * clamp(Math.sqrt(56000 / (s.threads * dotsPerFiber * s.layers)), 0.45, 1);
+      const area = Math.max(0.8 * s.thickness, 0.45) ** 2 / 0.64;
+      const load = Math.pow((s.threads / 72) * s.density * area, -0.75);
+      gl.useProgram(dots.program);
+      const u = dots.uniforms;
+      gl.uniform1f(u.uTime, state.time);
+      gl.uniform1f(u.uTwist, s.twist);
+      gl.uniform1f(u.uRoll, state.roll);
+      gl.uniform1f(u.uWaves, s.waves);
+      gl.uniform1f(u.uWidth, 0.62 * s.spread);
+      gl.uniformMatrix3fv(u.uOrient, false, camera.orient);
+      gl.uniform1f(u.uScale, s.scale * state.fit);
+      gl.uniformMatrix4fv(u.uViewProj, false, camera.viewProj);
+      gl.uniform3f(u.uEye, camera.eye[0], camera.eye[1], camera.eye[2]);
+      gl.uniform2f(u.uViewport, canvas.width, canvas.height);
+      gl.uniform1f(u.uDpr, ratio);
+      gl.uniform1f(u.uFibers, s.threads);
+      gl.uniform1f(u.uDots, dotsPerFiber);
+      gl.uniform1f(u.uFlow, state.flow);
+      gl.uniform1f(u.uSize, 1.6 * s.thickness);
+      gl.uniform1f(u.uFocus, state.focus);
+      gl.uniform1f(u.uDof, s.depthOfField);
+      gl.uniform1f(u.uMaxCoc, blurCap);
+      gl.uniform1f(u.uFocal, CAMERA);
+      gl.uniform1f(u.uIntro, introEase);
+      gl.uniform4f(u.uPulse, state.pulse.s, state.pulse.age, state.pulse.strength, state.pulse.ribbon);
+      gl.uniform4f(
+        u.uHover,
+        state.hover.x * ratio,
+        (state.height - state.hover.y) * ratio,
+        140 * ratio,
+        state.hover.presence * s.mouseStrength
+      );
+      gl.uniform1f(u.uPart, s.hover === 1 ? 1 : 0);
+      gl.uniform1f(u.uDotLength, s.dotLength);
+      gl.uniform1f(u.uSparkle, s.sparkle);
+      gl.uniform1f(u.uDepthSpread, 0.12);
+      gl.uniform1f(u.uVolume, s.volume);
+      gl.uniform3f(u.uGlowColor, state.glow[0], state.glow[1], state.glow[2]);
+      gl.uniform3f(u.uLineColor, state.line[0], state.line[1], state.line[2]);
+      gl.uniform3f(u.uSecondaryColor, state.secondary[0], state.secondary[1], state.secondary[2]);
+      gl.uniform1f(u.uTips, s.tips);
+      gl.uniform1f(u.uGradient, s.gradient);
+      gl.uniform1f(u.uFold, s.foldGlow);
+      for (let ribbon = 0; ribbon < s.layers; ribbon += 1) {
+        const place = PLACEMENTS[ribbon];
+        gl.uniform1f(u.uRibbon, ribbon);
+        gl.uniform4f(u.uPlace, place[0], place[1], place[2], place[3]);
+        gl.uniform1f(u.uGain, RIBBON_GAIN[ribbon] * load);
+        gl.uniform1f(u.uTint, RIBBON_TINT[ribbon]);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, s.threads * dotsPerFiber);
+      }
+
+      const dustCount = Math.round(420 * s.particles);
+      if (dustCount > 0) {
+        gl.useProgram(dust.program);
+        const d = dust.uniforms;
+        gl.uniformMatrix4fv(d.uViewProj, false, camera.viewProj);
+        gl.uniform2f(d.uViewport, canvas.width, canvas.height);
+        gl.uniform1f(d.uDpr, ratio);
+        gl.uniform1f(d.uTime, state.time);
+        gl.uniform1f(d.uSize, 2.2 * s.thickness);
+        gl.uniform1f(d.uFocus, state.focus);
+        gl.uniform1f(d.uDof, s.depthOfField);
+        gl.uniform1f(d.uMaxCoc, 22);
+        gl.uniform1f(d.uFocal, CAMERA);
+        gl.uniform1f(d.uIntro, introEase);
+        gl.uniform1f(d.uSparkle, s.sparkle);
+        gl.uniform1f(d.uScale, s.scale * state.fit);
+        gl.uniform1f(d.uGradient, s.gradient);
+        gl.uniform1f(d.uGain, 1 / s.thickness);
+        gl.uniform3f(d.uGlowColor, state.glow[0], state.glow[1], state.glow[2]);
+        gl.uniform3f(d.uLineColor, state.line[0], state.line[1], state.line[2]);
+        gl.uniform3f(d.uSecondaryColor, state.secondary[0], state.secondary[1], state.secondary[2]);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, dustCount);
+      }
+      gl.disable(gl.BLEND);
+
+      const blooming = s.glow > 0.001 && !s.lightMode;
+      gl.bindVertexArray(vao);
+      if (blooming) {
+        chain.forEach((target, index) => {
+          allocate(
+            target,
+            Math.max(1, Math.round(canvas.width / 2 ** (index + 1))),
+            Math.max(1, Math.round(canvas.height / 2 ** (index + 1)))
+          );
+        });
+        drawPass(bright, chain[0], scene, [0.5 / scene.width, 0.5 / scene.height]);
+        for (let index = 1; index < BLOOM_LEVELS; index += 1) {
+          drawPass(down, chain[index], chain[index - 1], [1 / chain[index - 1].width, 1 / chain[index - 1].height]);
+        }
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE);
+        for (let index = BLOOM_LEVELS - 1; index > 0; index -= 1) {
+          drawPass(up, chain[index - 1], chain[index], [0.5 / chain[index].width, 0.5 / chain[index].height]);
+        }
+        gl.disable(gl.BLEND);
+      }
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(composite.program);
+      const c = composite.uniforms;
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, scene.texture);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, blooming ? chain[0].texture : scene.texture);
+      gl.uniform1i(c.uScene, 0);
+      gl.uniform1i(c.uBloom, 1);
+      gl.uniform1f(c.uGlow, blooming ? s.glow : 0);
+      gl.uniform1f(c.uBrightness, s.brightness);
+      gl.uniform1f(c.uLightMode, s.lightMode ? 1 : 0);
+      gl.uniform1f(c.uGrain, s.grain);
+      gl.uniform1f(c.uVignette, s.vignette);
+      gl.uniform1f(c.uFrame, state.frame % 977);
+      gl.uniform2f(c.uView, canvas.width, canvas.height);
+      gl.uniform1f(c.uDpr, ratio);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindVertexArray(null);
+    };
+
+    const frame = now => {
+      raf = 0;
+      if (!alive || !visible || document.hidden) return;
+      const s = settingsRef.current;
+      const elapsed = last ? (now - last) / 1000 : 1 / 60;
+      const dt = Math.min(0.05, elapsed);
+      last = now;
+      const moving = !s.paused && !reduce;
+      if (moving) {
+        state.frame += 1;
+        state.time += dt * s.speed;
+        state.roll += dt * s.speed * s.rollSpeed;
+        state.flow += dt * s.flow * 12;
+        state.intro += Math.min(elapsed, 1);
+      } else if (state.intro < INTRO_SECONDS) {
+        state.intro = INTRO_SECONDS;
+      }
+      state.pulse.age += dt;
+      state.pulse.strength = Math.max(0, 1 - state.pulse.age / 1.8) ** 2;
+
+      const { pointer, hover, look } = state;
+      const active = s.mouseInteraction && pointer.inside && !reduce;
+      if (active && !hover.placed) {
+        hover.x = pointer.x;
+        hover.y = pointer.y;
+        hover.placed = true;
+      }
+      hover.x += (pointer.x - hover.x) * (1 - Math.exp(-dt / 0.08));
+      hover.y += (pointer.y - hover.y) * (1 - Math.exp(-dt / 0.08));
+      const goal = active ? 1 : 0;
+      hover.presence += (goal - hover.presence) * (1 - Math.exp(-dt / (goal > hover.presence ? 0.3 : 0.6)));
+      if (!active && hover.presence < 0.001) hover.placed = false;
+      const lookX = active ? (pointer.x / state.width - 0.5) * 0.5 : 0;
+      const lookY = active ? (0.5 - pointer.y / state.height) * 0.5 : 0;
+      look.vx += (30 * (lookX - look.x) - 11 * look.vx) * dt;
+      look.vy += (30 * (lookY - look.y) - 11 * look.vy) * dt;
+      look.x += look.vx * dt;
+      look.y += look.vy * dt;
+
+      const resting = CAMERA + s.focusDepth * 3;
+      let focusGoal = resting;
+      if (active && s.hover === 0) {
+        const near = nearestOnRibbon(s, hover.x, hover.y);
+        if (near) focusGoal = resting + (near.depth - resting) * hover.presence * Math.min(1, s.mouseStrength);
+      }
+      state.focus += (focusGoal - state.focus) * (1 - Math.exp(-dt / 0.35));
+
+      render();
+      const settling =
+        Math.abs(goal - hover.presence) > 0.002 ||
+        Math.abs(lookX - look.x) > 0.0002 ||
+        Math.abs(lookY - look.y) > 0.0002 ||
+        Math.abs(focusGoal - state.focus) > 0.001 ||
+        state.pulse.strength > 0.001;
+      if (moving || settling) raf = requestAnimationFrame(frame);
+      else last = 0;
+    };
+
+    const wake = () => {
+      if (!raf && alive && visible && !document.hidden) raf = requestAnimationFrame(frame);
+    };
+
+    const onPointerMove = event => {
+      const rect = container.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      state.pointer.x = x;
+      state.pointer.y = y;
+      state.pointer.inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
+      wake();
+    };
+
+    const onPointerDown = event => {
+      const s = settingsRef.current;
+      if (!s.mouseInteraction || !s.pulseOnClick || event.button !== 0 || reduce) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest('a, button, input, textarea, select, label, [role="button"]')
+      )
+        return;
+      const rect = container.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+      const near = nearestOnRibbon(s, x, y);
+      if (near) state.pulse = { s: near.s, age: 0, strength: 1, ribbon: near.ribbon };
+      wake();
+    };
+
+    const onPointerLeave = () => {
+      state.pointer.inside = false;
+      wake();
+    };
+
+    const onVisibility = () => {
+      last = 0;
+      wake();
+    };
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
+    const intersection = new IntersectionObserver(entries => {
+      visible = entries.some(entry => entry.isIntersecting);
+      if (visible) {
+        last = 0;
+        wake();
+      }
+    });
+    intersection.observe(container);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown);
+    document.documentElement.addEventListener('pointerleave', onPointerLeave);
+    document.addEventListener('visibilitychange', onVisibility);
+    resize();
+    wake();
+
+    wakeRef.current = () => {
+      if (!raf) render();
+      wake();
+    };
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+      wakeRef.current = null;
+      resizeObserver.disconnect();
+      intersection.disconnect();
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave);
+      document.removeEventListener('visibilitychange', onVisibility);
+      gl.deleteVertexArray(vao);
+      [scene, ...chain].forEach(target => {
+        if (target.texture) gl.deleteTexture(target.texture);
+        gl.deleteFramebuffer(target.framebuffer);
+      });
+      [dots, dust, bright, down, up, composite].forEach(entry => gl.deleteProgram(entry.program));
+    };
+  })();
+
+  return cleanup;
+}
+
+window.createGhostFibers = createGhostFibers;
+})();
+
+</script>
+<script id="ghostFibersInit">
+(function () {
+  var host = document.getElementById('ghostBg');
+  if (!host) return;
+  var canvas = host.querySelector('.ghost-fibers-canvas');
+  if (!canvas || typeof window.createGhostFibers !== 'function') return;
+  window.createGhostFibers(host, canvas, {
+    glowColor: '#43cdff',
+    layers: 3,
+    twist: 1.55,
+    threads: 72,
+    fiberStyle: 'dashes',
+    depthOfField: 0,
+    hoverEffect: 'part',
+    intro: true,
+    mouseInteraction: true,
+    lineColor: '#2c83ff',
+    secondaryColor: '#39fffb',
+    waves: 0.65,
+    volume: 0.45,
+    spread: 0.85,
+    scale: 0.65,
+    rotation: 60,
+    perspective: 0.8,
+    density: 1.55,
+    thickness: 3,
+    foldGlow: 1.15,
+    speed: 0.2,
+    flow: 0.6,
+    rollSpeed: -0.11,
+    sparkle: 1.2,
+    glow: 2,
+    brightness: 2,
+    vignette: 1,
+    grain: 0
+  });
+})();
+</script>
+
 </body>
 </html>
