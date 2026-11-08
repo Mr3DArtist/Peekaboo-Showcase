@@ -5577,7 +5577,7 @@ html.dark .hero-copy-card:hover {
 
 /* Mode video and quick-start clip. */
 .pb-mode-shot { position: relative; display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); background: #07131f; color: transparent; font-size: 0; }
-.pb-howto-video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; margin-top: 1.25rem; background: #000; border: 0; }
+
 
 /* The four restriction buttons, drawn over a real capture. */
 .pb-restrict-row { position:absolute; z-index:3; left:50%; bottom:16px; transform:translateX(-50%); display:flex; gap:.45rem; padding:.35rem; border-radius:999px; background:rgba(5,12,20,.82); border:1px solid rgba(120,220,255,.35); box-shadow:0 6px 22px rgba(0,0,0,.4); }
@@ -5622,7 +5622,6 @@ html.dark .hero-copy-card:hover {
   <a href="#shapekeys">Modes</a>
   <a href="#showcase">Support</a>
   <a href="#pricing">Pricing</a>
-  <a href="#howto">How to</a>
 </nav>
 
 <main id="top">
@@ -5715,7 +5714,7 @@ html.dark .hero-copy-card:hover {
 </section>
 
 <!-- ============================================================ -->
-<!-- SHARED AFMP LAUNCH OFFER — kept as on the original Auto Face  -->
+<!-- PEEKABOO 70% OFF — coupon copy logic and the original offer clip. -->
 <!-- MoCap Pro page, with the coupon copy logic and the AFMP clip. -->
 <!-- ============================================================ -->
 <section class="offer-band reveal" aria-label="Special offer">
@@ -5734,12 +5733,12 @@ html.dark .hero-copy-card:hover {
     <div class="ob-mid">
       <div class="coupon-wrap">
         <a class="coupon-btn" id="couponBtnBand"
-           href="https://superhivemarket.com/products/auto-face-mocap-pro?ref=473"
-           data-href="https://superhivemarket.com/products/auto-face-mocap-pro?ref=473&amp;variant=23321"
+           href="https://superhivemarket.com/products/peekaboo?ref=473"
+           data-href="https://superhivemarket.com/products/peekaboo?ref=473"
            target="_top" rel="noopener"
            aria-label="Copy the discount coupon code and open the store">
           <span class="coupon-label">Coupon</span>
-          <span class="coupon-code">afmp30</span>
+          <span class="coupon-code">peekaboo70</span>
           <span class="coupon-copy">Copy</span>
         </a>
         <p class="coupon-hint">Click to copy the code.</p>
@@ -5749,7 +5748,7 @@ html.dark .hero-copy-card:hover {
 
     <div class="ob-media">
       <img src="https://mr3dpageclips.carrd.co/assets/images/image18.gif?v=110e3b49"
-           alt="Auto Face MoCap Pro demo clip" width="453" height="391" />
+           alt="Peekaboo offer clip" width="453" height="391" />
     </div>
   </div>
 </section>
@@ -6365,67 +6364,6 @@ html.dark .hero-copy-card:hover {
       </div>
     </div>
     <p class="license-note">Prices shown in USD. Licence terms are listed on the Superhive product page.</p>
-  </div>
-</section>
-
-<!-- ============================================================ -->
-<!-- HOW TO / QUICK START                                         -->
-<!-- ============================================================ -->
-<section class="section" id="howto" style="padding-top:0;">
-  <span class="seam-label">How to</span>
-  <div class="container">
-    <div class="section-head reveal" style="text-align:center;">
-      <span class="section-kicker" style="justify-content:center;">Quick start</span>
-      <h2 class="section-title">How to use Peekaboo</h2>
-    </div>
-
-    <div class="support-grid reveal" style="grid-template-columns:minmax(0,1fr)!important;max-width:860px!important;width:100%;margin-inline:auto;">
-      <div class="support-card" style="text-align:center;">
-        <div class="support-card-top" style="justify-content:center;">
-          <span class="support-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" style="width:36px;height:36px;" xmlns="http://www.w3.org/2000/svg"><path fill="#ff0033" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8Z"/><path fill="#fff" d="m9.6 15.6 6.3-3.6-6.3-3.6Z"/></svg>
-          </span>
-          <span class="support-tag">Demo clip</span>
-        </div>
-        <h3>Watch the picker in action</h3>
-        <video class="pb-howto-video" controls muted playsinline preload="metadata" data-no-clip-bar poster="assets/videos/panel-pile-poster.jpg" src="assets/videos/panel-pile.mp4" aria-label="Peekaboo demo clip"></video>
-      </div>
-    </div>
-
-    <div class="support-grid" style="margin-top:1.5rem;">
-      <div class="support-card">
-        <div class="support-card-top">
-          <span class="support-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-          </span>
-          <span class="support-tag">Step 1</span>
-        </div>
-        <h3>Install &amp; enable</h3>
-        <p>Install the add-on in Blender 5.2, enable it in Preferences &gt; Add-ons, then open the 3D Viewport. Peekaboo adds its own tab in the N-panel.</p>
-      </div>
-
-      <div class="support-card">
-        <div class="support-card-top">
-          <span class="support-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/></svg>
-          </span>
-          <span class="support-tag">Step 2</span>
-        </div>
-        <h3>Aim &amp; open</h3>
-        <p>Put the cursor over the objects you want. Hold or tap Alt+Space, or the key you chose in preferences. The grid opens where you pressed and waits for you to pick.</p>
-      </div>
-
-      <div class="support-card">
-        <div class="support-card-top">
-          <span class="support-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l12 9-6 1.5L9 20 6 3Z"/></svg>
-          </span>
-          <span class="support-tag">Step 3</span>
-        </div>
-        <h3>Pick &amp; adjust</h3>
-        <p>Click a preview to select. Shift or Ctrl builds a selection, middle-click frames, right-click opens the object menu, and clicking a name renames in place.</p>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -9404,7 +9342,7 @@ header.site-header .brand-stroke-header .brand-title-grad {background-image:var(
 .quick-nav a[href="#character"] {--nav-accent:#f0a4ce;}
 .quick-nav a[href="#showcase"] {--nav-accent:#75d8ac;}
 .quick-nav a[href="#pricing"] {--nav-accent:#f3c477;}
-.quick-nav a[href="#howto"] {--nav-accent:#a9d78d;}
+
 .quick-nav a {color:var(--nav-accent)!important;border-color:color-mix(in srgb,var(--nav-accent) 60%,transparent)!important;background:color-mix(in srgb,var(--nav-accent) 9%,rgba(0,0,0,.3))!important;--ring:var(--nav-accent);outline-color:color-mix(in srgb,var(--nav-accent) 35%,transparent);}
 .quick-nav a:hover,.quick-nav a.active,.quick-nav a[aria-current] {border-color:var(--nav-accent)!important;background:color-mix(in srgb,var(--nav-accent) 20%,#071421)!important;color:#f5faff!important;}
 .quick-nav a:focus-visible {outline:2px solid var(--nav-accent)!important;outline-offset:3px;animation:none;}
