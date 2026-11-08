@@ -5556,10 +5556,10 @@ html.dark .hero-copy-card:hover {
 /* GhostFibers background */
 #ghostBg { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
 #ghostBg .ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-/* The offer band is its own opaque panel, as in the original page, so the
-   GhostFibers background can never show through it. */
-.offer-band { background-color: #061423 !important; }
-.offer-band .pb-off { display: inline-flex; align-items: center; justify-content: center; margin-left: .75rem; padding: .28rem .7rem; border-radius: 999px; background: #38e0ff; color: #061423; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: .78rem; letter-spacing: .05em; white-space: nowrap; }
+/* The panel is a 50% black scrim, not an opaque navy fill, so the GhostFibers
+   background reads through it while the offer copy keeps its contrast. */
+.offer-band { background-color: rgba(0, 0, 0, .5) !important; }
+.offer-band .pb-off { display: inline-flex; align-items: center; justify-content: center; margin: .6rem 0 0; padding: .4rem 1rem; border-radius: 999px; background: #38e0ff; color: #061423; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: .05em; white-space: nowrap; }
 .ghost-fibers-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
@@ -5726,8 +5726,9 @@ html.dark .hero-copy-card:hover {
       <div class="so-title">Limited Time Discount</div>
       <div class="so-prices">
         <span class="so-old" data-price="regular" data-fmt="usd">$14.99</span>
-        <span class="so-new" data-price="offer" data-fmt="usd">$4.50</span><span class="pb-off">70% OFF</span>
+        <span class="so-new" data-price="offer" data-fmt="usd">$4.50</span>
       </div>
+      <span class="pb-off">70% OFF</span>
     </div>
 
     <div class="ob-mid">
@@ -5767,9 +5768,9 @@ html.dark .hero-copy-card:hover {
         <div class="hero-cards">
       <div class="hero-center">
         <div class="quickfog-outer hero-copy-card">
-          <h1>Easy See/Select Objects<br />Hidden inside other objects</h1>
+          <h1>Easily See/Select Objects<br />Hidden inside other objects</h1>
           <p class="hero-sub">
-            Peekaboo Allows you to easly see and select the objects hidden under
+            Peekaboo Allows you to easily see and select the objects hidden under
           </p>
         </div>
 
@@ -5801,7 +5802,7 @@ html.dark .hero-copy-card:hover {
     <!-- What is Peekaboo -->
     <div class="quickfog-outer reveal" style="margin-top:1rem;padding:1rem .9rem;border-radius:14px;">
       <h3 style="font-size:1.5rem;margin-bottom:.5rem;">What is Peekaboo?</h3>
-      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;">Peekaboo is a viewport object picker for Blender 5.2 and above. Hold or tap Alt+Space over the 3D Viewport and a grid of live model previews opens under the cursor, one tile per object it finds. Click a tile to select that object.</p>
+      <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;">Peekaboo is a Blender addon that allows you to see hidden object under your cursor/mesh. Hold or tap Alt+Space over the 3D Viewport and a grid of live model previews opens under the cursor, one tile per object it finds. Click a tile to select that object.</p>
       <h3 style="font-size:1.5rem;margin:.9rem 0 .5rem;">Why use Peekaboo?</h3>
       <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;"><strong>Stop hunting the Outliner.</strong> The object you want is usually behind three others. Peekaboo shows you the model, not a row of names, so you can pick the right one without cycling through overlaps or hiding the front object first or clicking on the same place multiple times to select objects that are behind the main object.</p>
       <p style="font-size:.85rem;line-height:1.6;color:var(--muted);margin:0 0 .6rem;"><strong>Keep your hands in the viewport.</strong> Selection, multi-select, framing, the object context menu and inline rename all happen in the grid. The restriction buttons that control whether an object can be selected, seen, or rendered are on the preview you are pointing at.</p>
@@ -12042,19 +12043,89 @@ window.createGhostFibers = createGhostFibers;
 (function () {
   var bg = document.getElementById('ghostBg');
   if (!bg) return;
-  function sync() {
-    if (!window.AFMP || !window.AFMP.band) return;
-    var b = window.AFMP.band();
-    if (!b || !(b.height > 0)) return;
-    bg.style.top = Math.round(b.top) + 'px';
-    bg.style.height = Math.round(b.height) + 'px';
+  var lastTop = -1, lastHeight = -1;
+
+  function apply(top, height) {
+    top = Math.max(0, Math.round(top));
+    height = Math.max(1, Math.round(height));
+    if (top === lastTop && height === lastHeight) return;
+    lastTop = top; lastHeight = height;
+    bg.style.top = top + 'px';
+    bg.style.height = height + 'px';
     bg.style.bottom = 'auto';
   }
+
+  /* A same-origin store frame exposes its own geometry, which is exact and
+     available before the sentinel ladder has reported. A cross-origin frame
+     throws on access and falls back to the sentinel band. */
+  function parentBand() {
+    try {
+      var p = window.parent;
+      if (!p || p === window) return null;
+      var fe = window.frameElement;
+      if (!fe) return null;
+      var r = fe.getBoundingClientRect();
+      var vh = p.innerHeight || (p.document && p.document.documentElement.clientHeight) || 0;
+      var vw = p.innerWidth || (p.document && p.document.documentElement.clientWidth) || 0;
+      if (!(vh > 0)) return null;
+      var top = Math.max(0, r.top), bottom = Math.min(vh, r.bottom);
+      var left = Math.max(0, r.left), right = Math.min(vw, r.right);
+      /* Clip against any scrolling/overflowing ancestor between the frame and
+         the parent's viewport, so a framed product panel is handled too. */
+      var node = fe.parentElement;
+      while (node && p.document && node !== p.document.documentElement) {
+        var cs = p.getComputedStyle(node);
+        if (/(hidden|auto|scroll|clip)/.test(cs.overflowX) ||
+            /(hidden|auto|scroll|clip)/.test(cs.overflowY)) {
+          var cr = node.getBoundingClientRect();
+          top = Math.max(top, cr.top); bottom = Math.min(bottom, cr.bottom);
+          left = Math.max(left, cr.left); right = Math.min(right, cr.right);
+        }
+        node = node.parentElement;
+      }
+      if (!(right > left) || !(bottom > top)) return { top: 0, height: 0 };
+      var localTop = Math.max(0, top - r.top);
+      var localHeight = Math.min(bottom - top, window.innerHeight - localTop);
+      if (!(localHeight > 0)) return { top: 0, height: 0 };
+      return { top: localTop, height: localHeight };
+    } catch (e) { return null; }
+  }
+
+  function sync() {
+    /* The sentinel band is the steady-state source (it updates without any
+       per-scroll style reads). The parent geometry only fills the initial gap
+       before the observer has reported. */
+    var b = (window.AFMP && window.AFMP.band) ? window.AFMP.band() : null;
+    if (!b) b = parentBand();
+    if (!b || !(b.height > 0)) {
+      /* No trusted measurement yet. Never leave a 16000px backing store in a
+         tall store frame; hold a viewport-sized layer until the band arrives. */
+      if (lastTop < 0) apply(0, Math.min(window.innerHeight || 1800, 1800));
+      return;
+    }
+    apply(b.top, Math.min(b.height, 2400));
+  }
+
+  function bindParent() {
+    try {
+      var p = window.parent;
+      if (!p || p === window) return;
+      void p.document.documentElement;          // throws if cross-origin
+      p.addEventListener('scroll', sync, true);
+      p.addEventListener('resize', sync, true);
+      if (p.visualViewport) p.visualViewport.addEventListener('scroll', sync, { passive: true });
+    } catch (e) {}
+  }
+
   if (window.AFMP && window.AFMP.onBand) window.AFMP.onBand(sync);
   window.addEventListener('scroll', sync, { passive: true });
   window.addEventListener('resize', sync);
+  window.addEventListener('load', sync);
   document.addEventListener('visibilitychange', sync);
+  bindParent();
   sync();
+  setTimeout(sync, 250);
+  setTimeout(sync, 1200);
 })();
 </script>
 
