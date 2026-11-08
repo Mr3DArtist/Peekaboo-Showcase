@@ -5556,17 +5556,14 @@ html.dark .hero-copy-card:hover {
 /* GhostFibers background */
 #ghostBg { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
 #ghostBg .ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-/* Keep the offer band and its coupon legible over the fibers. */
-.offer-band .ob-inner { background: rgba(3, 10, 18, .42); border-radius: 18px; }
-.offer-band .coupon-btn { background: rgba(4, 12, 22, .92) !important; }
-.offer-band .coupon-hint { text-shadow: 0 1px 3px rgba(0,0,0,.85); }
-.offer-band .so-valid { background: rgba(4, 12, 22, .72) !important; }
+/* The offer band is its own opaque panel, as in the original page, so the
+   GhostFibers background can never show through it. */
+.offer-band { background-color: #061423 !important; }
 .ghost-fibers-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .ghost-fibers-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 
-/* The real capture under the hero copy. */
-.pb-hero-shot { display: block; width: 100%; height: auto; border-radius: 12px; }
-.hero-video-card .pb-hero-shot { box-shadow: 0 12px 30px -18px rgba(0, 0, 0, .8); }
+/* The hero keeps only the copy card and CTA after the capture card was removed. */
+.hero-center .hero-cta { margin-top: 1.4rem !important; }
 
 /* Solid theme wordmark, no gradient. */
 .brand-title-text .brand-title-grad { background-image: none !important; color: #38e0ff !important; -webkit-text-fill-color: #38e0ff !important; }
@@ -5578,7 +5575,7 @@ html.dark .hero-copy-card:hover {
 .pb-feature-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; z-index: 1; }
 
 /* Mode video and quick-start clip. */
-.pb-mode-shot { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); background: #07131f; color: transparent; font-size: 0; }
+.pb-mode-shot { position: relative; display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); background: #07131f; color: transparent; font-size: 0; }
 .pb-howto-video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; margin-top: 1.25rem; background: #000; border: 0; }
 
 /* The four restriction buttons, drawn over a real capture. */
@@ -5629,7 +5626,92 @@ html.dark .hero-copy-card:hover {
 
 <main id="top">
 
-<!-- Gallery removed for the Superhive product-page embed. -->
+<section class="gallery-section" id="gallery" aria-label="More add ons by Mr3D">
+  <span class="seam-label">More from Mr3D</span>
+  <div class="container">
+    <div class="gallery-head">
+      <div class="gallery-controls" style="margin-left:auto;">
+        <button class="g-arrow" id="gPrev" aria-label="Previous products" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <button class="g-arrow" id="gNext" aria-label="Next products">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="m3-wrap">
+      <div class="gallery-viewport" id="gViewport">
+        <ul class="gallery-track" id="gTrack">
+          <li class="g-card">
+            <a class="g-thumb" href="https://superhivemarket.com/products/auto-face-mocap-pro?ref=473" target="_blank" rel="noopener noreferrer">
+              <span class="g-frame">
+                <span class="g-ph gp-5" role="img" aria-label="Auto Face MoCap Pro">
+                  <img src="https://mr3dpageclips.carrd.co/assets/images/image16.jpg?v=a689dffb" alt="Auto Face MoCap Pro" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                </span>
+                <span class="g-ph-tag hot">Flagship</span>
+              </span>
+              <span class="g-caption"><span class="g-name">Auto Face MoCap Pro</span><span class="g-cta">View &rarr;</span></span>
+            </a>
+          </li>
+          <li class="g-card">
+            <a class="g-thumb" href="https://superhivemarket.com/products/gobos-master?ref=473" target="_blank" rel="noopener">
+              <span class="g-frame">
+                <span class="g-ph gp-1" role="img" aria-label="Gobos Master">
+                  <img src="https://mr3d.carrd.co/assets/images/image06.jpg?v=c88b4758" alt="Gobos Master" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                </span>
+                <span class="g-ph-tag hot">Featured</span>
+              </span>
+              <span class="g-caption"><span class="g-name">Gobos Master</span><span class="g-cta">View &rarr;</span></span>
+            </a>
+          </li>
+          <li class="g-card">
+            <a class="g-thumb" href="https://superhivemarket.com/products/decalify?ref=473" target="_blank" rel="noopener">
+              <span class="g-frame">
+                <span class="g-ph gp-2" role="img" aria-label="True Dark Themes Pack">
+                  <img src="https://mr3d.carrd.co/assets/images/image07.jpg?v=c88b4758" alt="True Dark Themes Pack" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                </span>
+              </span>
+              <span class="g-caption"><span class="g-name">True Dark Themes Pack</span><span class="g-cta">View &rarr;</span></span>
+            </a>
+          </li>
+          <li class="g-card">
+            <a class="g-thumb" href="https://superhivemarket.com/products/true-dark-blender-themes-pack?ref=473" target="_blank" rel="noopener">
+              <span class="g-frame">
+                <span class="g-ph gp-3" role="img" aria-label="Decalify">
+                  <img src="https://mr3d.carrd.co/assets/images/image02.jpg?v=c88b4758" alt="Decalify" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                </span>
+              </span>
+              <span class="g-caption"><span class="g-name">Decalify</span><span class="g-cta">View &rarr;</span></span>
+            </a>
+          </li>
+          <li class="g-card">
+            <a class="g-thumb" href="https://superhivemarket.com/products/tabflow?ref=473" target="_blank" rel="noopener noreferrer">
+              <span class="g-frame">
+                <span class="g-ph gp-6" role="img" aria-label="TabFlow">
+                  <img src="https://mr3dpageclips.carrd.co/assets/images/image17.jpg?v=c5be56da" alt="TabFlow" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                </span>
+                <span class="g-ph-tag hot">Time-Saver</span>
+              </span>
+              <span class="g-caption"><span class="g-name">TabFlow</span><span class="g-cta">View &rarr;</span></span>
+            </a>
+          </li>
+          <li class="g-card">
+            <a class="g-thumb" href="https://superhivemarket.com/creators/mr3d?ref=473" target="_blank" rel="noopener">
+              <span class="g-frame">
+                <span class="g-ph gp-4" role="img" aria-label="Mr3D creator page">
+                  <img src="https://mr3d.carrd.co/assets/images/image08.gif?v=c88b4758" alt="Mr3D creator page" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                </span>
+              </span>
+              <span class="g-caption"><span class="g-name">More from Mr3D</span><span class="g-cta">Visit &rarr;</span></span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="gallery-dots" id="gDots" role="tablist" aria-label="Gallery pages"></div>
+    </div>
+  </div>
+</section>
 
 <!-- ============================================================ -->
 <!-- SHARED AFMP LAUNCH OFFER — kept as on the original Auto Face  -->
@@ -5661,7 +5743,7 @@ html.dark .hero-copy-card:hover {
         </a>
         <p class="coupon-hint">Click to copy the code.</p>
       </div>
-      <div class="so-valid" data-text="offer-expiry">Limited time offer</div>
+      <div class="so-valid" data-text="offer-expiry">Valid until October 31st 2026</div>
     </div>
 
     <div class="ob-media">
@@ -5689,11 +5771,6 @@ html.dark .hero-copy-card:hover {
           <p class="hero-sub">
             Peekaboo Allows you to easly see and select the objects hidden under
           </p>
-        </div>
-
-        <div class="quickfog-outer hero-video-card">
-          <img class="pb-hero-shot" src="assets/images/rain-popup.jpg" alt="Peekaboo preview grid showing four objects over the Rain character" width="1800" height="1181" />
-          <p class="yt-caption">Real capture: one preview per object, anchored where the popup opened.</p>
         </div>
 
         <div class="hero-cta">
@@ -6049,7 +6126,9 @@ html.dark .hero-copy-card:hover {
     </div>
 
     <div class="quickfog-outer reveal" style="padding:.6rem;margin-top:1rem;">
-      <video class="pb-mode-shot" muted loop playsinline data-autoplay poster="assets/images/modes-panel.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video65.mp4" aria-label="Peekaboo mode buttons in action"></video>
+      <div class="pb-mode-shot" role="img" aria-label="Peekaboo mode buttons in action">
+        <video muted loop playsinline data-autoplay poster="assets/images/modes-panel.jpg" src="https://mr3dpageclips.carrd.co/assets/videos/video65.mp4" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1"></video>
+      </div>
       <div style="padding:1.1rem 1.3rem 1.3rem;">
         <h3 class="feature-title" style="text-align:center;margin-bottom:.7rem;">What the mode buttons do</h3>
         <p class="feature-copy" style="text-align:center;max-width:78ch;margin-inline:auto;">
@@ -6326,7 +6405,7 @@ html.dark .hero-copy-card:hover {
           <span class="support-tag">Demo clip</span>
         </div>
         <h3>Watch the picker in action</h3>
-        <video class="pb-howto-video" controls muted playsinline preload="metadata" poster="assets/videos/panel-pile-poster.jpg" src="assets/videos/panel-pile.mp4" aria-label="Peekaboo demo clip"></video>
+        <video class="pb-howto-video" controls muted playsinline preload="metadata" data-no-clip-bar poster="assets/videos/panel-pile-poster.jpg" src="assets/videos/panel-pile.mp4" aria-label="Peekaboo demo clip"></video>
       </div>
     </div>
 
@@ -6699,11 +6778,144 @@ html.dark .hero-copy-card:hover {
     seamEls.forEach(function (el) { el.classList.add('seam-open'); });
   }
 
-  /* The Mr3D gallery was removed for the Superhive embed; the catalog still uses
-     the same reduced-motion flag, so it is defined here. */
+/* ---------- 7. Product gallery carousel ---------- */
+  var viewport = document.getElementById('gViewport');
+  var track = document.getElementById('gTrack');
+  var prevBtn = document.getElementById('gPrev');
+  var nextBtn = document.getElementById('gNext');
+  var dotsWrap = document.getElementById('gDots');
+  var cards = track ? track.children : [];
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- Fresh clip URLs — the per-load token OPT-IN ----------
+  // Entrance stagger for cards
+  if (cards.length) {
+    Array.prototype.forEach.call(cards, function (c, i) {
+      c.style.transitionDelay = (i * 0.06) + 's';
+      setTimeout(function () { c.classList.add('g-in'); }, 60);
+    });
+  }
+
+  // Helper values
+  var remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
+  function gVisible() {
+    var w = viewport ? viewport.clientWidth : 0;
+    if (w <= 420) return 1;
+    if (w <= 640) return 2;
+    if (w <= 1000) return 3;
+    return 5;
+  }
+  function gMaxIndex() { return Math.max(0, cards.length - gVisible()); }
+  function gPositions() {
+    var arr = [];
+    Array.prototype.forEach.call(cards, function (c) { arr.push(c.offsetLeft); });
+    return arr;
+  }
+  function gCurrent() {
+    var scroll = viewport.scrollLeft;
+    var arr = gPositions();
+    var best = 0;
+    for (var i = 0; i < arr.length; i++) {
+      if (Math.abs(arr[i] - scroll) < Math.abs(arr[best] - scroll)) best = i;
+    }
+    return best;
+  }
+  function gGo(i) {
+    i = Math.max(0, Math.min(gMaxIndex(), i));
+    var arr = gPositions();
+    viewport.scrollTo({ left: arr[i] || 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  // Prev / next buttons
+  prevBtn.addEventListener('click', function () { gGo(gCurrent() - 1); });
+  nextBtn.addEventListener('click', function () { gGo(gCurrent() + 1); });
+
+  // Dots
+  function gRenderDots() {
+    dotsWrap.innerHTML = '';
+    var n = gMaxIndex() + 1;
+    for (var i = 0; i < n; i++) {
+      (function (idx) {
+        var b = document.createElement('button');
+        b.className = 'g-dot' + (idx === 0 ? ' active' : '');
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-label', 'Go to gallery page ' + (idx + 1));
+        b.addEventListener('click', function () { gGo(idx); gRestart(); });
+        dotsWrap.appendChild(b);
+      })(i);
+    }
+  }
+  function gUpdateDots() {
+    var cur = gCurrent();
+    var dots = dotsWrap.children;
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].classList.toggle('active', i === cur);
+    }
+    prevBtn.disabled = cur <= 0;
+    nextBtn.disabled = cur >= gMaxIndex();
+
+    // Only show arrows (and dots) when the cards overflow — i.e. more cards
+    // than can fit in one row, or a narrower screen.
+    var overflow = viewport.scrollWidth > viewport.clientWidth + 1;
+    prevBtn.style.display = overflow ? '' : 'none';
+    nextBtn.style.display = overflow ? '' : 'none';
+    dotsWrap.style.display = overflow ? '' : 'none';
+  }
+  viewport.addEventListener('scroll', function () { gUpdateDots(); }, { passive: true });
+
+  // Drag to scroll (mouse devices only, so it never fights native touch swipe)
+  var gDown = false, gStartX = 0, gStartScroll = 0;
+  if (window.matchMedia('(pointer: fine)').matches) {
+    viewport.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      gDown = true; gStartX = e.clientX; gStartScroll = viewport.scrollLeft;
+      viewport.classList.add('dragging'); gStop();
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!gDown) return;
+      viewport.scrollLeft = gStartScroll - (e.clientX - gStartX);
+    });
+    window.addEventListener('pointerup', function () {
+      gDown = false; viewport.classList.remove('dragging'); gRestart();
+    });
+  }
+  // Touch: pause while touching
+  viewport.addEventListener('touchstart', gStop, { passive: true });
+  viewport.addEventListener('touchend', gRestart, { passive: true });
+  // Pause on hover
+  viewport.addEventListener('mouseenter', gStop);
+  viewport.addEventListener('mouseleave', gRestart);
+
+  // Auto-advance
+  var gTimer = null;
+  function gStop() { clearInterval(gTimer); gTimer = null; }
+  function gRestart() {
+    gStop();
+    if (reduceMotion) return;
+    gTimer = setInterval(function () {
+      /* ⛔ OFF-SCREEN CAROUSELS DO NOT ADVANCE. document.hidden was the only guard,
+         and it says nothing about the gallery having been scrolled past — the strip
+         kept scrolling itself (and re-measuring and repainting) for as long as the
+         page was open. isOnScreen() is IntersectionObserver-backed, so it is also
+         correct inside a cross-origin store iframe, where innerHeight is the FRAME's
+         height and would report everything as visible. */
+      if (document.hidden) return;
+      if (window.AFMP && !window.AFMP.isOnScreen(viewport)) return;
+      var cur = gCurrent();
+      if (cur >= gMaxIndex()) { gGo(0); } else { gGo(cur + 1); }
+    }, 4200);
+  }
+
+  // Init + resize
+  gRenderDots();
+  gUpdateDots();
+  gRestart();
+  window.addEventListener('resize', function () {
+    gRenderDots();
+    gUpdateDots();
+  });
+
+    /* ---------- Fresh clip URLs — the per-load token OPT-IN ----------
      ⛔ CURRENTLY UNUSED — no element on the page carries `data-fresh` any more (removed
      2026-10-01 on the owner's word: "then remove it"). The page now relies on the `?v=`
      token in each carrd URL, which is the FILE's own ETag, refreshed by the /updateclips
@@ -10736,6 +10948,13 @@ html .support-card .support-link::before,html .support-card .support-link::after
 /* A little larger: the Tap or hold copy. */
 .feature-row.side-row.pb-tap-row .feature-title { font-size: clamp(1.15rem, 2.1vw, 1.5rem) !important; }
 .feature-row.side-row.pb-tap-row .feature-copy { font-size: clamp(.95rem, 1.35vw, 1.1rem) !important; }
+@media (max-width: 1000px) {
+  #gallery .gallery-track { flex-wrap: wrap !important; }
+  #gallery .g-card { flex: 0 0 calc((100% - 2 * var(--strip-gap) - 1px) / 3) !important; }
+}
+@media (max-width: 640px) {
+  #gallery .g-card { flex: 0 0 calc((100% - var(--strip-gap) - 1px) / 2) !important; }
+}
 </style>
 <script id="pbLazyClips">
 /* Below-fold videos: hand the src back as the clip approaches the viewport.
@@ -11887,6 +12106,26 @@ window.createGhostFibers = createGhostFibers;
     vignette: 1,
     grain: 0
   });
+})();
+</script>
+
+<script id="pbGhostBand">
+(function () {
+  var bg = document.getElementById('ghostBg');
+  if (!bg) return;
+  function sync() {
+    if (!window.AFMP || !window.AFMP.band) return;
+    var b = window.AFMP.band();
+    if (!b || !(b.height > 0)) return;
+    bg.style.top = Math.round(b.top) + 'px';
+    bg.style.height = Math.round(b.height) + 'px';
+    bg.style.bottom = 'auto';
+  }
+  if (window.AFMP && window.AFMP.onBand) window.AFMP.onBand(sync);
+  window.addEventListener('scroll', sync, { passive: true });
+  window.addEventListener('resize', sync);
+  document.addEventListener('visibilitychange', sync);
+  sync();
 })();
 </script>
 
